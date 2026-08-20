@@ -2,68 +2,224 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
   <title>Crisis in Gordistan</title>
-  <link rel="stylesheet" href="/style.css">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
 </head>
+
 <body>
-  <header>
-    <div>
-      <h1>Crisis in Gordistan</h1>
-      <p>Minimal hex-and-counter crisis wargame</p>
+
+  <div id="map"></div>
+
+  <!-- TOP BAR -->
+
+  <header id="topbar">
+    <div id="titleBlock">
+      <strong>Crisis in Gordistan</strong>
+      <span id="roomTag">OFFLINE</span>
     </div>
-    <div id="roomTag"></div>
+
+    <button
+      id="playersButton"
+      class="iconButton"
+    >
+      Players
+    </button>
   </header>
 
-  <main>
-    <section class="panel" id="lobby">
-      <h2>Online game</h2>
-      <div class="row">
-        <button id="createBtn">Create game</button>
-        <input id="joinCode" maxlength="6" placeholder="ROOM CODE">
-        <button id="joinRoomBtn">Open room</button>
-      </div>
+  <!-- TURN DISPLAY -->
 
-      <div id="seatBox" class="hidden">
-        <input id="playerName" maxlength="24" placeholder="Your name">
-        <select id="seat">
-          <option value="0">Coalition</option>
-          <option value="1">Iran</option>
-          <option value="2">Regional States</option>
-          <option value="3">Nonstate / Political</option>
-        </select>
-        <button id="takeSeatBtn">Take seat</button>
-        <button id="startBtn">Start game</button>
-      </div>
-      <div id="players"></div>
-    </section>
+  <div
+    id="turnPanel"
+    class="floatingPanel hidden"
+  >
+    <div id="turnLabel">
+      Turn
+    </div>
 
-    <section id="game" class="hidden">
-      <div class="toolbar panel">
-        <div><b id="turnLabel">Turn</b></div>
-        <div class="tracks" id="tracks"></div>
-        <button id="endTurnBtn">End turn</button>
-      </div>
+    <div id="yourSide"></div>
 
-      <div class="gameLayout">
-        <div class="panel boardWrap">
-          <div id="board"></div>
-        </div>
-        <aside class="panel">
-          <h3>Selected</h3>
-          <div id="selected">None</div>
-          <button id="cancelBtn">Cancel</button>
-          <h3>Game log</h3>
-          <div id="log"></div>
-        </aside>
-      </div>
-    </section>
+    <button id="endTurnBtn">
+      End Turn
+    </button>
+  </div>
 
-    <footer>
-      This prototype deliberately uses fictional geography and abstract force values rather than real bases,
-      invasion corridors, targeting data, or real-world orders of battle.
-    </footer>
-  </main>
+  <!-- LOBBY -->
+
+  <section
+    id="lobby"
+    class="modalPanel"
+  >
+    <h1>
+      Crisis in Gordistan
+    </h1>
+
+    <p class="subtitle">
+      A turn-based hex-and-counter
+      geopolitical wargame.
+    </p>
+
+    <div id="homeControls">
+      <button
+        id="createBtn"
+        class="primary"
+      >
+        Create Game
+      </button>
+
+      <div class="joinRow">
+        <input
+          id="joinCode"
+          maxlength="6"
+          placeholder="ROOM"
+        >
+
+        <button id="joinRoomBtn">
+          Join
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="seatBox"
+      class="hidden"
+    >
+      <input
+        id="playerName"
+        maxlength="24"
+        placeholder="Your name"
+      >
+
+      <select id="seat">
+        <option value="0">
+          Coalition
+        </option>
+
+        <option value="1">
+          Iran
+        </option>
+
+        <option value="2">
+          Regional States
+        </option>
+
+        <option value="3">
+          Nonstate Forces
+        </option>
+      </select>
+
+      <button
+        id="takeSeatBtn"
+        class="primary"
+      >
+        Take Side
+      </button>
+
+      <div
+        id="lobbyPlayers"
+        class="playerList"
+      ></div>
+
+      <button
+        id="startBtn"
+        class="startButton"
+      >
+        Start Game
+      </button>
+    </div>
+  </section>
+
+  <!-- PLAYERS DRAWER -->
+
+  <section
+    id="playersDrawer"
+    class="drawer hidden"
+  >
+    <div class="drawerHeader">
+      <strong>Players</strong>
+
+      <button
+        id="closePlayers"
+        class="iconButton"
+      >
+        ×
+      </button>
+    </div>
+
+    <div id="playerList"></div>
+
+    <div id="trackList"></div>
+  </section>
+
+  <!-- UNIT PANEL -->
+
+  <section
+    id="unitPanel"
+    class="bottomPanel hidden"
+  >
+    <div id="selectedUnit"></div>
+
+    <button id="clearSelection">
+      Close
+    </button>
+  </section>
+
+  <!-- LOG -->
+
+  <button
+    id="logButton"
+    class="logButton hidden"
+  >
+    Log
+  </button>
+
+  <section
+    id="logDrawer"
+    class="logDrawer hidden"
+  >
+    <div class="drawerHeader">
+      <strong>Game Log</strong>
+
+      <button
+        id="closeLog"
+        class="iconButton"
+      >
+        ×
+      </button>
+    </div>
+
+    <div id="log"></div>
+  </section>
+
+  <!-- LOADING -->
+
+  <div
+    id="loading"
+    class="loading hidden"
+  >
+    <div class="spinner"></div>
+    <div id="loadingText">
+      Loading…
+    </div>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
 
   <script src="/app.js"></script>
 </body>
