@@ -1,19 +1,42 @@
-const $ = selector =>
-  document.querySelector(selector);
+const $ =
+  selector =>
+    document.querySelector(
+      selector
+    );
 
-const sides = [
+
+const SIDES = [
   "Coalition",
   "Iran",
   "Regional States",
   "Nonstate Forces"
 ];
 
-const sideClasses = [
+
+const SIDE_CLASSES = [
   "coalition",
   "iran",
   "regional",
   "nonstate"
 ];
+
+
+/*
+  PERSISTENT DEVICE PLAYER ID
+
+  This lets the main menu know
+  which games belong to you after
+  you quit or revisit the website.
+*/
+
+let playerId =
+  localStorage.cigPlayerId ||
+  crypto.randomUUID();
+
+
+localStorage.cigPlayerId =
+  playerId;
+
 
 let code = null;
 
@@ -21,7 +44,18 @@ let ws = null;
 
 let state = null;
 
-let selectedUnitId = null;
+let selectedUnitId =
+  null;
+
+let pollTimer =
+  null;
+
+let directoryTimer =
+  null;
+
+let intentionalClose =
+  false;
+
 
 let hexLayers = [];
 
@@ -29,31 +63,50 @@ let unitLayers = [];
 
 let placeLayers = [];
 
-let playerId =
-  localStorage.cigPlayerId ||
-  crypto.randomUUID();
 
-localStorage.cigPlayerId =
-  playerId;
+/*
+  REMEMBER NAME
+*/
+
+const savedName =
+  localStorage.cigPlayerName ||
+  "";
+
+
+$("#menuName").value =
+  savedName;
+
+
+$("#playerName").value =
+  savedName;
+
 
 /*
   MAP
 */
 
-const map = L.map(
-  "map",
-  {
-    zoomControl: true,
-    minZoom: 4,
-    maxZoom: 9
-  }
-).setView(
-  [30.7, 52.5],
-  5
-);
+const map =
+  L.map(
+    "map",
+    {
+      zoomControl: true,
+
+      minZoom: 4,
+
+      maxZoom: 9
+    }
+  ).setView(
+    [
+      30.7,
+      52.5
+    ],
+    5
+  );
+
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
   {
     maxZoom: 19,
 
@@ -62,157 +115,253 @@ L.tileLayer(
   }
 ).addTo(map);
 
+
 /*
-  UI
+  BUTTONS
 */
 
 $("#createBtn").onclick =
   createGame;
 
+
 $("#joinRoomBtn").onclick =
-  () => {
-    const room =
+  () =>
+    openRoom(
       $("#joinCode")
         .value
         .trim()
-        .toUpperCase();
-
-    openRoom(room);
-  };
-
-$("#takeSeatBtn").onclick =
-  () => {
-    const name =
-      $("#playerName")
-        .value
-        .trim();
-
-    if (!name) {
-      alert("Enter your name.");
-      return;
-    }
-
-    send({
-      type: "join",
-
-      playerId,
-
-      name,
-
-      seat:
-        Number(
-          $("#seat").value
-        )
-    });
-  };
-
-$("#startBtn").onclick =
-  () => {
-    showLoading(
-      "Starting game…"
+        .toUpperCase()
     );
 
-    send({
-      type: "start",
-      playerId
-    });
-  };
 
-$("#endTurnBtn").onclick =
+$("#refreshMenuBtn").onclick =
+  loadDirectory;
+
+
+$("#takeSeatBtn").onclick =
+  takeSide;
+
+
+$("#startBtn").onclick =
+  startGame;
+
+
+$("#leaveLobbyBtn").onclick =
+  leaveLobby;
+
+
+$("#gameMenuBtn").onclick =
   () => {
-    selectedUnitId = null;
+    $("#gameMenu")
+      .classList
+      .remove(
+        "hidden"
+      );
+  };
 
+
+$("#closeGameMenu").onclick =
+  () => {
+    $("#gameMenu")
+      .classList
+      .add(
+        "hidden"
+      );
+  };
+
+
+$("#exitGameBtn").onclick =
+  exitToMenu;
+
+
+$("#finishGameBtn").onclick =
+  () => {
     send({
-      type: "endTurn",
+      type:
+        "finish",
+
       playerId
     });
   };
+
 
 $("#playersButton").onclick =
   () => {
     $("#playersDrawer")
       .classList
-      .toggle("hidden");
+      .toggle(
+        "hidden"
+      );
   };
+
 
 $("#closePlayers").onclick =
   () => {
     $("#playersDrawer")
       .classList
-      .add("hidden");
+      .add(
+        "hidden"
+      );
   };
+
 
 $("#logButton").onclick =
   () => {
     $("#logDrawer")
       .classList
-      .remove("hidden");
+      .remove(
+        "hidden"
+      );
   };
+
 
 $("#closeLog").onclick =
   () => {
     $("#logDrawer")
       .classList
-      .add("hidden");
+      .add(
+        "hidden"
+      );
   };
+
 
 $("#clearSelection").onclick =
   () => {
-    selectedUnitId = null;
+    selectedUnitId =
+      null;
+
     render();
   };
 
+
+$("#endTurnBtn").onclick =
+  () => {
+    selectedUnitId =
+      null;
+
+    send({
+      type:
+        "endTurn",
+
+      playerId
+    });
+
+    setTimeout(
+      fetchCurrentState,
+      100
+    );
+  };
+
+
+function rememberName(
+  name
+) {
+  if (!name) {
+    return;
+  }
+
+  localStorage.cigPlayerName =
+    name;
+
+  $("#menuName").value =
+    name;
+
+  $("#playerName").value =
+    name;
+}
+
+
 /*
-  CREATE
+  CREATE GAME
 */
 
 async function createGame() {
-  showLoading(
-    "Creating game…"
+
+  const name =
+    (
+      $("#menuName").value ||
+      ""
+    ).trim() ||
+    "Player";
+
+
+  rememberName(
+    name
   );
 
+
+  showLoading(
+    "Creating lobby…"
+  );
+
+
   try {
+
     const response =
       await fetch(
         "/api/create",
+
         {
-          method: "POST"
+          method:
+            "POST",
+
+          headers: {
+            "content-type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              playerId,
+
+              name
+            })
         }
       );
+
 
     const data =
       await response.json();
 
-    location.hash =
-      data.code;
 
     await openRoom(
       data.code
     );
+
   } catch {
+
     hideLoading();
 
+
     alert(
-      "Could not create game."
+      "Could not create lobby."
     );
   }
 }
 
+
 /*
-  OPEN ROOM
+  OPEN / RESUME ROOM
 */
 
 async function openRoom(
   roomCode
 ) {
+
   roomCode =
-    roomCode.toUpperCase();
+    String(
+      roomCode || ""
+    )
+      .trim()
+      .toUpperCase();
+
 
   if (
     !/^[A-Z0-9]{6}$/.test(
       roomCode
     )
   ) {
+
     alert(
       "Enter a six-character room code."
     );
@@ -220,180 +369,956 @@ async function openRoom(
     return;
   }
 
-  code = roomCode;
 
-  $("#roomTag").textContent =
-    `ROOM ${code}`;
+  code =
+    roomCode;
 
-  $("#joinCode").value =
+
+  location.hash =
     code;
 
-  $("#seatBox")
-    .classList
-    .remove("hidden");
+
+  $("#roomTag")
+    .textContent =
+      `ROOM ${code}`;
+
+
+  $("#roomCodeInMenu")
+    .textContent =
+      `Room ${code}`;
+
+
+  $("#joinCode")
+    .value =
+      code;
+
 
   showLoading(
     "Connecting…"
   );
 
+
+  /*
+    Close previous socket WITHOUT
+    triggering reconnect behavior.
+  */
+
+  intentionalClose =
+    true;
+
+
   if (ws) {
-    ws.close();
+
+    try {
+      ws.close();
+    } catch {}
+
   }
 
-  const protocol =
-    location.protocol === "https:"
-      ? "wss"
-      : "ws";
 
-  ws = new WebSocket(
-    `${protocol}://${location.host}/ws/${code}`
+  ws = null;
+
+
+  intentionalClose =
+    false;
+
+
+  clearInterval(
+    pollTimer
   );
 
-  ws.onopen =
+
+  connectSocket();
+
+
+  /*
+    Critical fix:
+
+    don't wait on the WebSocket
+    before showing game state.
+
+    Fetch it immediately over HTTP.
+  */
+
+  await fetchCurrentState();
+
+
+  /*
+    Remove loading even if Safari
+    takes a while to negotiate WS.
+  */
+
+  setTimeout(
+    hideLoading,
+    800
+  );
+}
+
+
+/*
+  WEBSOCKET
+*/
+
+function connectSocket() {
+
+  if (!code) {
+    return;
+  }
+
+
+  const protocol =
+    location.protocol ===
+    "https:"
+
+      ? "wss"
+
+      : "ws";
+
+
+  const socket =
+    new WebSocket(
+      `${protocol}://${location.host}/ws/${code}`
+    );
+
+
+  ws =
+    socket;
+
+
+  socket.onopen =
     () => {
+
       hideLoading();
+
+      startPolling();
+
     };
 
-  ws.onmessage =
+
+  socket.onmessage =
     event => {
+
       const message =
         JSON.parse(
           event.data
         );
 
+
       if (
         message.type ===
         "state"
       ) {
-        state =
-          message.state;
 
-        /*
-          This is the important part:
-          every WebSocket state update
-          immediately rerenders the lobby
-          or game.
+        applyState(
+          message.state
+        );
 
-          No manual refresh required.
-        */
-
-        render();
       }
+
 
       if (
         message.type ===
         "error"
       ) {
+
         hideLoading();
+
+
+        $("#lobbyStatus")
+          .textContent =
+            message.message;
+
 
         alert(
           message.message
         );
+
       }
+
     };
 
-  ws.onerror =
-    () => {
-      hideLoading();
-    };
 
-  ws.onclose =
+  socket.onerror =
     () => {
+
       /*
-        Reconnect automatically if the
-        connection disappears.
+        Do nothing dramatic.
+
+        Polling keeps the game alive.
+      */
+
+      startPolling();
+
+    };
+
+
+  socket.onclose =
+    () => {
+
+      if (
+        intentionalClose ||
+        !code
+      ) {
+        return;
+      }
+
+
+      startPolling();
+
+
+      /*
+        Quietly reconnect.
+
+        No full-screen "Connecting"
+        screen here.
       */
 
       setTimeout(
         () => {
+
           if (
             code &&
-            (!ws ||
+            (
+              !ws ||
               ws.readyState ===
-                WebSocket.CLOSED)
+                WebSocket.CLOSED
+            )
           ) {
-            openRoom(code);
+
+            connectSocket();
+
           }
+
         },
-        1500
+
+        1200
       );
+
     };
+
 }
+
+
+/*
+  FALLBACK POLLING
+
+  Every second.
+
+  This is intentionally redundant
+  with WebSockets so iPhone Safari
+  cannot leave the UI stale.
+*/
+
+function startPolling() {
+
+  clearInterval(
+    pollTimer
+  );
+
+
+  pollTimer =
+    setInterval(
+      fetchCurrentState,
+      1000
+    );
+
+}
+
+
+/*
+  FETCH AUTHORITATIVE STATE
+*/
+
+async function fetchCurrentState() {
+
+  if (!code) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/game/${code}?t=${Date.now()}`,
+
+        {
+          cache:
+            "no-store"
+        }
+      );
+
+
+    if (
+      !response.ok
+    ) {
+      return;
+    }
+
+
+    const latest =
+      await response.json();
+
+
+    if (
+      !state ||
+
+      latest.updatedAt !==
+        state.updatedAt ||
+
+      latest.phase !==
+        state.phase
+    ) {
+
+      applyState(
+        latest
+      );
+
+    }
+
+  } catch {}
+
+}
+
+
+/*
+  APPLY SERVER STATE
+*/
+
+function applyState(
+  newState
+) {
+
+  state =
+    newState;
+
+
+  hideLoading();
+
+
+  render();
+
+}
+
 
 /*
   SEND
+
+  WebSocket is the fast path.
+
+  HTTP polling will reconcile
+  afterward automatically.
 */
 
-function send(message) {
+function send(
+  message
+) {
+
   if (
     ws &&
     ws.readyState ===
       WebSocket.OPEN
   ) {
+
     ws.send(
       JSON.stringify(
         message
       )
     );
+
+
+    return true;
   }
+
+
+  /*
+    Try reconnecting rather than
+    making the user refresh.
+  */
+
+  connectSocket();
+
+
+  return false;
 }
 
+
 /*
-  RENDER
+  TAKE SIDE
+
+  This now immediately gives
+  visual feedback, then pulls
+  authoritative state again.
 */
 
-function render() {
-  if (!state) return;
+function takeSide() {
 
-  renderLobbyPlayers();
+  const name =
+    (
+      $("#playerName").value ||
 
-  if (
-    state.phase ===
-    "starting"
-  ) {
-    showLoading(
-      "Deploying forces…"
+      $("#menuName").value ||
+
+      ""
+    ).trim();
+
+
+  if (!name) {
+
+    alert(
+      "Enter your name."
     );
 
     return;
   }
 
+
+  rememberName(
+    name
+  );
+
+
+  $("#lobbyStatus")
+    .textContent =
+      "Joining…";
+
+
+  const message = {
+    type:
+      "join",
+
+    playerId,
+
+    name,
+
+    seat:
+      Number(
+        $("#seat").value
+      )
+  };
+
+
   if (
-    state.phase ===
-    "lobby"
+    send(message)
   ) {
-    hideLoading();
 
-    $("#lobby")
-      .classList
-      .remove("hidden");
+    $("#lobbyStatus")
+      .textContent =
+        "Side selected.";
 
-    $("#turnPanel")
-      .classList
-      .add("hidden");
+  } else {
 
-    $("#logButton")
-      .classList
-      .add("hidden");
+    /*
+      Socket happened to be down.
+      Try again very shortly.
+    */
+
+    setTimeout(
+      () =>
+        send(message),
+
+      300
+    );
+
+  }
+
+
+  setTimeout(
+    fetchCurrentState,
+    150
+  );
+
+
+  setTimeout(
+    fetchCurrentState,
+    500
+  );
+
+}
+
+
+/*
+  START
+
+  No indefinite loading screen.
+
+  One-player test games allowed.
+*/
+
+function startGame() {
+
+  if (!state) {
+    return;
+  }
+
+
+  const me =
+    getMe();
+
+
+  if (!me) {
+
+    alert(
+      "Take a side first."
+    );
 
     return;
   }
 
-  hideLoading();
+
+  $("#lobbyStatus")
+    .textContent =
+      "Starting game…";
+
+
+  send({
+    type:
+      "start",
+
+    playerId
+  });
+
+
+  setTimeout(
+    fetchCurrentState,
+    100
+  );
+
+
+  setTimeout(
+    fetchCurrentState,
+    400
+  );
+
+
+  setTimeout(
+    fetchCurrentState,
+    900
+  );
+
+}
+
+
+/*
+  LEAVE WAITING LOBBY
+
+  Releases your side.
+*/
+
+function leaveLobby() {
+
+  if (
+    state &&
+    state.phase ===
+      "lobby" &&
+    getMe()
+  ) {
+
+    send({
+      type:
+        "leaveLobby",
+
+      playerId
+    });
+
+  }
+
+
+  exitToMenu();
+
+}
+
+
+/*
+  EXIT AN ACTIVE GAME
+
+  Important:
+
+  This does NOT remove you
+  from the game.
+
+  Therefore it appears under
+  "My Current Games" and can
+  be resumed later.
+*/
+
+function exitToMenu() {
+
+  intentionalClose =
+    true;
+
+
+  if (ws) {
+
+    try {
+      ws.close();
+    } catch {}
+
+  }
+
+
+  ws = null;
+
+
+  clearInterval(
+    pollTimer
+  );
+
+
+  code =
+    null;
+
+
+  state =
+    null;
+
+
+  selectedUnitId =
+    null;
+
+
+  history.replaceState(
+    null,
+    "",
+
+    location.pathname
+  );
+
+
+  clearMapLayers();
+
 
   $("#lobby")
     .classList
-    .add("hidden");
+    .add(
+      "hidden"
+    );
 
-  $("#turnPanel")
+
+  $("#topbar")
     .classList
-    .remove("hidden");
+    .add(
+      "hidden"
+    );
+
+
+  $("#gameMenu")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#playersDrawer")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#logDrawer")
+    .classList
+    .add(
+      "hidden"
+    );
+
 
   $("#logButton")
     .classList
-    .remove("hidden");
+    .add(
+      "hidden"
+    );
 
-  renderTurn();
+
+  $("#endTurnBtn")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#unitPanel")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#menuScreen")
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  intentionalClose =
+    false;
+
+
+  loadDirectory();
+
+}
+
+
+/*
+  MASTER RENDER
+*/
+
+function render() {
+
+  if (!state) {
+    return;
+  }
+
+
+  if (
+    state.phase ===
+    "lobby"
+  ) {
+
+    renderLobby();
+
+    return;
+  }
+
+
+  if (
+    state.phase ===
+    "finished"
+  ) {
+
+    exitToMenu();
+
+    return;
+  }
+
+
+  renderGame();
+
+}
+
+
+/*
+  LOBBY
+*/
+
+function renderLobby() {
+
+  $("#menuScreen")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#topbar")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#lobby")
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  $("#roomTag")
+    .textContent =
+      `ROOM ${state.code}`;
+
+
+  const me =
+    getMe();
+
+
+  if (me) {
+
+    $("#playerName")
+      .value =
+        me.name;
+
+
+    $("#seat")
+      .value =
+        String(
+          me.seat
+        );
+
+
+    $("#lobbyStatus")
+      .textContent =
+        `You are ${SIDES[me.seat]}.`;
+
+  } else {
+
+    $("#lobbyStatus")
+      .textContent =
+        "Choose a side.";
+
+  }
+
+
+  const ordered =
+    [...state.players]
+      .sort(
+        (a, b) =>
+          a.seat -
+          b.seat
+      );
+
+
+  if (
+    !ordered.length
+  ) {
+
+    $("#lobbyPlayers")
+      .innerHTML =
+        `
+        <div class="muted">
+          No players have taken a side yet.
+        </div>
+        `;
+
+  } else {
+
+    $("#lobbyPlayers")
+      .innerHTML =
+        ordered
+          .map(
+            (
+              player,
+              index
+            ) =>
+              `
+              <div class="lobbyPlayer">
+
+                <strong>
+                  ${
+                    index + 1
+                  }.
+                  ${
+                    escapeHtml(
+                      player.name
+                    )
+                  }
+
+                  ${
+                    player.id ===
+                    playerId
+                      ? " (you)"
+                      : ""
+                  }
+                </strong>
+
+                <span class="playerSeat">
+                  ${
+                    SIDES[
+                      player.seat
+                    ]
+                  }
+                </span>
+
+              </div>
+              `
+          )
+          .join("");
+
+  }
+
+
+  /*
+    Only need ONE player,
+    but it must be you / you
+    must have taken a side.
+  */
+
+  $("#startBtn")
+    .disabled =
+      !me;
+
+}
+
+
+/*
+  ACTIVE GAME
+*/
+
+function renderGame() {
+
+  $("#menuScreen")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#lobby")
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  $("#topbar")
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  $("#logButton")
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  $("#endTurnBtn")
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  const active =
+    state.players.find(
+      player =>
+        player.seat ===
+        state.activeSeat
+    );
+
+
+  const me =
+    getMe();
+
+
+  $("#turnLabel")
+    .textContent =
+      `TURN ${state.turn} · ${
+        active
+          ? active.name
+          : SIDES[
+              state.activeSeat
+            ]
+      }`;
+
+
+  $("#yourSide")
+    .textContent =
+      me
+        ? `You: ${SIDES[me.seat]}`
+        : "Spectating";
+
+
+  $("#endTurnBtn")
+    .disabled =
+      !me ||
+      me.seat !==
+        state.activeSeat;
+
 
   renderPlayers();
 
@@ -408,126 +1333,46 @@ function render() {
   renderSelected();
 
   renderLog();
-}
 
-/*
-  LOBBY PLAYER LIST
 
-  This updates every time any player joins,
-  changes their side, reconnects, etc.
-*/
+  setTimeout(
+    () =>
+      map.invalidateSize(),
 
-function renderLobbyPlayers() {
-  if (!state) return;
-
-  const container =
-    $("#lobbyPlayers");
-
-  if (
-    state.players.length ===
     0
-  ) {
-    container.innerHTML =
-      "<div>No players yet.</div>";
+  );
 
-    return;
-  }
-
-  const ordered =
-    [...state.players]
-      .sort(
-        (a, b) =>
-          a.seat - b.seat
-      );
-
-  container.innerHTML =
-    ordered
-      .map(
-        (player, index) =>
-          `
-          <div class="lobbyPlayer">
-            <strong>
-              ${index + 1}.
-              ${escapeHtml(
-                player.name
-              )}
-            </strong>
-
-            <div class="playerSeat">
-              ${sides[player.seat]}
-            </div>
-          </div>
-        `
-      )
-      .join("");
 }
 
-/*
-  TURN INFO
-*/
-
-function renderTurn() {
-  const active =
-    state.players.find(
-      player =>
-        player.seat ===
-        state.activeSeat
-    );
-
-  $("#turnLabel")
-    .textContent =
-      `TURN ${state.turn} · ${
-        active
-          ? active.name
-          : sides[
-              state.activeSeat
-            ]
-      }`;
-
-  const me =
-    getMe();
-
-  $("#yourSide")
-    .textContent =
-      me
-        ? `You: ${
-            sides[me.seat]
-          }`
-        : "Spectating";
-
-  const button =
-    $("#endTurnBtn");
-
-  button.disabled =
-    !me ||
-    me.seat !==
-      state.activeSeat;
-}
 
 /*
-  PLAYERS / TURN ORDER
+  PLAYERS
 */
 
 function renderPlayers() {
+
   const ordered =
     [...state.players]
       .sort(
         (a, b) =>
-          a.seat - b.seat
+          a.seat -
+          b.seat
       );
+
 
   $("#playerList")
     .innerHTML =
       ordered
         .map(
-          (player, index) => {
+          (
+            player,
+            index
+          ) => {
+
             const active =
               player.seat ===
               state.activeSeat;
 
-            const me =
-              player.id ===
-              playerId;
 
             return `
               <div class="
@@ -538,15 +1383,20 @@ function renderPlayers() {
                     : ""
                 }
               ">
+
                 ${
                   index + 1
                 }.
-                ${escapeHtml(
-                  player.name
-                )}
 
                 ${
-                  me
+                  escapeHtml(
+                    player.name
+                  )
+                }
+
+                ${
+                  player.id ===
+                  playerId
                     ? " (you)"
                     : ""
                 }
@@ -559,19 +1409,28 @@ function renderPlayers() {
 
                 <span class="playerSeat">
                   ${
-                    sides[
+                    SIDES[
                       player.seat
                     ]
                   }
                 </span>
+
               </div>
             `;
+
           }
         )
         .join("");
+
 }
 
+
+/*
+  TRACKS
+*/
+
 function renderTracks() {
+
   $("#trackList")
     .innerHTML =
       `
@@ -594,33 +1453,45 @@ function renderTracks() {
         state.tracks
           .regionalStability
       } / 6
-    `;
+      `;
+
 }
 
+
 /*
-  HEX GRID
+  MAP HEXES
 */
 
 function renderHexes() {
+
   for (
     const layer of
     hexLayers
   ) {
-    map.removeLayer(layer);
+
+    map.removeLayer(
+      layer
+    );
+
   }
 
-  hexLayers = [];
+
+  hexLayers =
+    [];
+
 
   for (
     const hex of
     state.hexes
   ) {
+
     const polygon =
       L.polygon(
         createHexShape(
           hex.lat,
           hex.lng
         ),
+
         {
           className:
             "hexPath",
@@ -630,29 +1501,43 @@ function renderHexes() {
         }
       );
 
+
     polygon.on(
       "click",
+
       () =>
-        clickHex(hex)
+        clickHex(
+          hex
+        )
     );
 
-    polygon.addTo(map);
+
+    polygon.addTo(
+      map
+    );
+
 
     hexLayers.push(
       polygon
     );
+
   }
+
 }
+
 
 function createHexShape(
   lat,
   lng
 ) {
+
   const latRadius =
     1.0;
 
+
   const lngRadius =
     1.15;
+
 
   return [
     [
@@ -664,6 +1549,7 @@ function createHexShape(
     [
       lat +
         latRadius,
+
       lng -
         lngRadius / 2
     ],
@@ -671,12 +1557,14 @@ function createHexShape(
     [
       lat +
         latRadius,
+
       lng +
         lngRadius / 2
     ],
 
     [
       lat,
+
       lng +
         lngRadius
     ],
@@ -684,6 +1572,7 @@ function createHexShape(
     [
       lat -
         latRadius,
+
       lng +
         lngRadius / 2
     ],
@@ -691,33 +1580,49 @@ function createHexShape(
     [
       lat -
         latRadius,
+
       lng -
         lngRadius / 2
     ]
   ];
+
 }
 
+
 /*
-  STRATEGIC LOCATIONS
+  PLACE LABELS
 */
 
 function renderLocations() {
-  if (
-    placeLayers.length
+
+  for (
+    const layer of
+    placeLayers
   ) {
-    return;
+
+    map.removeLayer(
+      layer
+    );
+
   }
+
+
+  placeLayers =
+    [];
+
 
   for (
     const place of
     state.locations
   ) {
+
     const marker =
       L.marker(
         [
           place.lat,
           place.lng
         ],
+
         {
           interactive:
             false,
@@ -733,43 +1638,66 @@ function renderLocations() {
                 ),
 
               iconSize:
-                [100, 20],
+                [
+                  100,
+                  20
+                ],
 
               iconAnchor:
-                [50, 10]
+                [
+                  50,
+                  10
+                ]
             })
         }
       );
 
-    marker.addTo(map);
+
+    marker.addTo(
+      map
+    );
+
 
     placeLayers.push(
       marker
     );
+
   }
+
 }
+
 
 /*
   UNITS
 */
 
 function renderUnits() {
+
   for (
     const layer of
     unitLayers
   ) {
-    map.removeLayer(layer);
+
+    map.removeLayer(
+      layer
+    );
+
   }
 
-  unitLayers = [];
+
+  unitLayers =
+    [];
+
 
   const me =
     getMe();
+
 
   for (
     const unit of
     state.units
   ) {
+
     const hex =
       state.hexes.find(
         hex =>
@@ -779,53 +1707,60 @@ function renderUnits() {
             unit.r
       );
 
-    if (!hex) continue;
+
+    if (!hex) {
+      continue;
+    }
+
 
     const mine =
       me &&
       unit.owner ===
         me.seat;
 
+
     const selected =
       selectedUnitId ===
       unit.id;
 
+
     const used =
       unit.attackedTurn ===
-        state.turn;
+      state.turn;
+
 
     const icon =
       L.divIcon({
-        className: "",
+
+        className:
+          "",
 
         html:
           `
           <div class="
             unitMarker
             ${
-              sideClasses[
+              SIDE_CLASSES[
                 unit.owner
               ]
             }
-
             ${
               mine
                 ? "mine"
                 : ""
             }
-
             ${
               selected
                 ? "selected"
                 : ""
             }
-
             ${
               used
                 ? "used"
                 : ""
             }
           ">
+
             ${
               shortUnitName(
                 unit
@@ -835,15 +1770,23 @@ function renderUnits() {
             <span class="unitSteps">
               ${unit.steps}
             </span>
+
           </div>
-        `,
+          `,
 
         iconSize:
-          [40, 40],
+          [
+            38,
+            38
+          ],
 
         iconAnchor:
-          [20, 20]
+          [
+            19,
+            19
+          ]
       });
+
 
     const marker =
       L.marker(
@@ -851,8 +1794,10 @@ function renderUnits() {
           hex.lat,
           hex.lng
         ],
+
         {
           icon,
+
           zIndexOffset:
             selected
               ? 1000
@@ -860,75 +1805,99 @@ function renderUnits() {
         }
       );
 
+
     marker.on(
       "click",
+
       event => {
+
         L.DomEvent
           .stopPropagation(
             event
           );
 
-        clickUnit(unit);
+
+        clickUnit(
+          unit
+        );
+
       }
     );
 
-    marker.addTo(map);
+
+    marker.addTo(
+      map
+    );
+
 
     unitLayers.push(
       marker
     );
+
   }
+
 }
 
+
 /*
-  UNIT SELECTION
+  UNIT CLICK
 */
 
-function clickUnit(unit) {
+function clickUnit(
+  unit
+) {
+
   const me =
     getMe();
 
-  if (!me) return;
 
   if (
+    !me ||
     me.seat !==
-    state.activeSeat
+      state.activeSeat
   ) {
     return;
   }
 
+
   if (
     !selectedUnitId
   ) {
+
     if (
       unit.owner ===
       me.seat
     ) {
+
       selectedUnitId =
         unit.id;
+
     }
+
   } else {
+
     const selected =
       getSelectedUnit();
 
+
     if (!selected) {
+
       selectedUnitId =
         null;
 
-      render();
-
-      return;
-    }
-
-    if (
+    } else if (
       unit.owner ===
       me.seat
     ) {
+
       selectedUnitId =
         unit.id;
+
     } else {
+
       send({
-        type: "attack",
+        type:
+          "attack",
 
         playerId,
 
@@ -939,44 +1908,57 @@ function clickUnit(unit) {
           unit.id
       });
 
+
       selectedUnitId =
         null;
+
+
+      setTimeout(
+        fetchCurrentState,
+        150
+      );
+
     }
+
   }
 
+
   render();
+
 }
 
-function clickHex(hex) {
+
+/*
+  HEX CLICK
+*/
+
+function clickHex(
+  hex
+) {
+
   const me =
     getMe();
+
 
   const selected =
     getSelectedUnit();
 
+
   if (
     !me ||
-    !selected
-  ) {
-    return;
-  }
-
-  if (
+    !selected ||
     me.seat !==
-    state.activeSeat
+      state.activeSeat ||
+    selected.owner !==
+      me.seat
   ) {
     return;
   }
 
-  if (
-    selected.owner !==
-    me.seat
-  ) {
-    return;
-  }
 
   send({
-    type: "move",
+    type:
+      "move",
 
     playerId,
 
@@ -990,75 +1972,99 @@ function clickHex(hex) {
       hex.r
   });
 
+
   selectedUnitId =
     null;
+
+
+  setTimeout(
+    fetchCurrentState,
+    150
+  );
+
 }
 
+
 /*
-  SELECTED UNIT PANEL
+  SELECTED UNIT
 */
 
 function renderSelected() {
+
   const unit =
     getSelectedUnit();
 
+
   if (!unit) {
+
     $("#unitPanel")
       .classList
-      .add("hidden");
+      .add(
+        "hidden"
+      );
 
     return;
   }
 
+
   $("#unitPanel")
     .classList
-    .remove("hidden");
+    .remove(
+      "hidden"
+    );
 
-  const moved =
-    unit.movedTurn ===
-    state.turn;
-
-  const attacked =
-    unit.attackedTurn ===
-    state.turn;
 
   $("#selectedUnit")
     .innerHTML =
       `
       <div class="unitTitle">
-        ${escapeHtml(
-          unit.label
-        )}
+        ${
+          escapeHtml(
+            unit.label
+          )
+        }
       </div>
 
       A${unit.attack}
-      · D${unit.defense}
-      · M${unit.move}
-      · ${unit.steps} steps
+      ·
+      D${unit.defense}
+      ·
+      M${unit.move}
+      ·
+      ${unit.steps} steps
 
       <br>
 
       ${
-        moved
+        unit.movedTurn ===
+        state.turn
+
           ? "Moved"
+
           : "Movement available"
       }
 
       ·
 
       ${
-        attacked
+        unit.attackedTurn ===
+        state.turn
+
           ? "Attack used"
+
           : "Attack available"
       }
-    `;
+      `;
+
 }
+
 
 /*
   LOG
 */
 
 function renderLog() {
+
   $("#log")
     .innerHTML =
       state.log
@@ -1070,30 +2076,284 @@ function renderLog() {
           line =>
             `
             <div class="logLine">
-              ${escapeHtml(
-                line
-              )}
+              ${
+                escapeHtml(
+                  line
+                )
+              }
             </div>
-          `
+            `
         )
         .join("");
+
 }
+
+
+/*
+  MAIN MENU DIRECTORY
+*/
+
+async function loadDirectory() {
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/directory?playerId=${encodeURIComponent(playerId)}&t=${Date.now()}`,
+
+        {
+          cache:
+            "no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    renderGameList(
+      "#joinableGames",
+      data.joinable,
+      "Join"
+    );
+
+
+    renderGameList(
+      "#currentGames",
+      data.mine,
+      "Resume"
+    );
+
+
+    renderGameList(
+      "#finishedGames",
+      data.finished,
+      null
+    );
+
+  } catch {
+
+    $("#joinableGames")
+      .innerHTML =
+        `
+        <div class="muted">
+          Could not load lobbies.
+        </div>
+        `;
+
+  }
+
+}
+
+
+/*
+  RENDER MENU GAME LIST
+*/
+
+function renderGameList(
+  selector,
+  games,
+  buttonLabel
+) {
+
+  const root =
+    $(selector);
+
+
+  if (
+    !games ||
+    !games.length
+  ) {
+
+    root.innerHTML =
+      `
+      <div class="muted">
+        None.
+      </div>
+      `;
+
+    return;
+  }
+
+
+  root.innerHTML =
+    games
+      .map(
+        game => {
+
+          const names =
+            (
+              game.players ||
+              []
+            )
+              .map(
+                player =>
+                  player.name
+              )
+              .join(
+                ", "
+              ) ||
+            "Empty";
+
+
+          return `
+            <div class="gameRow">
+
+              <div class="gameRowMeta">
+
+                <div class="gameCode">
+                  ${
+                    escapeHtml(
+                      game.code
+                    )
+                  }
+                </div>
+
+                <div class="gameDesc">
+
+                  ${
+                    escapeHtml(
+                      game.phase
+                    )
+                  }
+
+                  ·
+
+                  ${
+                    game.players
+                      ?.length ||
+                    0
+                  }/4
+
+                  ·
+
+                  ${
+                    escapeHtml(
+                      names
+                    )
+                  }
+
+                  ${
+                    game.turn
+                      ? ` · turn ${game.turn}`
+                      : ""
+                  }
+
+                </div>
+
+              </div>
+
+              ${
+                buttonLabel
+                  ? `
+                    <button
+                      data-open-room="${
+                        escapeHtml(
+                          game.code
+                        )
+                      }"
+                    >
+                      ${buttonLabel}
+                    </button>
+                    `
+                  : `
+                    <span class="muted">
+                      Finished
+                    </span>
+                    `
+              }
+
+            </div>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  root
+    .querySelectorAll(
+      "[data-open-room]"
+    )
+    .forEach(
+      button => {
+
+        button.onclick =
+          () =>
+            openRoom(
+              button.dataset
+                .openRoom
+            );
+
+      }
+    );
+
+}
+
+
+/*
+  CLEAN UP MAP
+*/
+
+function clearMapLayers() {
+
+  const allLayers = [
+    ...hexLayers,
+    ...unitLayers,
+    ...placeLayers
+  ];
+
+
+  for (
+    const layer of
+    allLayers
+  ) {
+
+    try {
+
+      map.removeLayer(
+        layer
+      );
+
+    } catch {}
+
+  }
+
+
+  hexLayers = [];
+
+  unitLayers = [];
+
+  placeLayers = [];
+
+}
+
 
 /*
   HELPERS
 */
 
 function getMe() {
-  if (!state) return null;
 
-  return state.players.find(
-    player =>
-      player.id ===
-      playerId
+  if (!state) {
+    return null;
+  }
+
+
+  return (
+    state.players.find(
+      player =>
+        player.id ===
+        playerId
+    ) || null
   );
+
 }
 
+
 function getSelectedUnit() {
+
   if (
     !state ||
     !selectedUnitId
@@ -1101,84 +2361,110 @@ function getSelectedUnit() {
     return null;
   }
 
-  return state.units.find(
-    unit =>
-      unit.id ===
-      selectedUnitId
+
+  return (
+    state.units.find(
+      unit =>
+        unit.id ===
+        selectedUnitId
+    ) || null
   );
+
 }
+
 
 function shortUnitName(
   unit
 ) {
+
   if (
     unit.domain ===
     "naval"
   ) {
-    return unit.owner === 0
-      ? "CV"
-      : "NAV";
+
+    return (
+      unit.owner === 0
+        ? "CV"
+        : "NAV"
+    );
+
   }
 
-  const words =
-    unit.label.split(" ");
 
   if (
-    words.includes(
+    unit.label.includes(
       "Corps"
     )
   ) {
     return "CORPS";
   }
 
+
   if (
-    words.includes(
+    unit.label.includes(
       "Army"
     )
   ) {
     return "ARMY";
   }
 
+
   if (
-    words.includes(
+    unit.label.includes(
       "Expeditionary"
     )
   ) {
     return "EXP";
   }
 
+
   if (
-    words.includes(
+    unit.label.includes(
       "Regional"
     )
   ) {
     return "REG";
   }
 
+
   return "IRR";
+
 }
+
 
 function showLoading(
   text
 ) {
+
   $("#loadingText")
     .textContent =
       text;
 
+
   $("#loading")
     .classList
-    .remove("hidden");
+    .remove(
+      "hidden"
+    );
+
 }
 
+
 function hideLoading() {
+
   $("#loading")
     .classList
-    .add("hidden");
+    .add(
+      "hidden"
+    );
+
 }
+
 
 function escapeHtml(
   value
 ) {
+
   return String(
     value
   ).replace(
@@ -1186,31 +2472,77 @@ function escapeHtml(
 
     char =>
       ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
+        "&":
+          "&amp;",
+
+        "<":
+          "&lt;",
+
+        ">":
+          "&gt;",
+
+        '"':
+          "&quot;",
+
+        "'":
+          "&#039;"
       })[char]
   );
+
 }
 
+
 /*
-  AUTO-OPEN ROOM FROM URL HASH
+  INITIAL LOAD
+
+  Menu refreshes every 3 seconds
+  while you're sitting on it.
+*/
+
+loadDirectory();
+
+
+directoryTimer =
+  setInterval(
+    () => {
+
+      if (!code) {
+        loadDirectory();
+      }
+
+    },
+
+    3000
+  );
+
+
+/*
+  OLD ROOM LINK
+
+  URLs like:
+  site.com/#ABC123
+
+  still work.
 */
 
 if (
-  location.hash.length > 1
+  location.hash.length >
+  1
 ) {
+
   const hashCode =
     location.hash
       .slice(1)
       .toUpperCase();
 
-  $("#joinCode").value =
-    hashCode;
+
+  $("#joinCode")
+    .value =
+      hashCode;
+
 
   openRoom(
     hashCode
   );
+
 }
