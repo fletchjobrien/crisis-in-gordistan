@@ -1,14 +1,28 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
+
   <meta charset="utf-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    content="
+      width=device-width,
+      initial-scale=1,
+      viewport-fit=cover
+    "
   >
 
-  <title>Crisis in Gordistan</title>
+  <meta
+    name="theme-color"
+    content="#ece9df"
+  >
+
+  <title>
+    Crisis in Gordistan
+  </title>
 
   <link
     rel="stylesheet"
@@ -19,151 +33,336 @@
     rel="stylesheet"
     href="/style.css"
   >
+
 </head>
 
 <body>
 
   <div id="map"></div>
 
-  <!-- TOP BAR -->
+  <!-- GAME TOP BAR -->
 
-  <header id="topbar">
-    <div id="titleBlock">
-      <strong>Crisis in Gordistan</strong>
-      <span id="roomTag">OFFLINE</span>
+  <header
+    id="topbar"
+    class="hidden"
+  >
+
+    <button
+      id="gameMenuBtn"
+      class="glassButton"
+    >
+      ☰
+    </button>
+
+    <div id="turnMini">
+
+      <strong id="turnLabel">
+        Crisis in Gordistan
+      </strong>
+
+      <span id="yourSide"></span>
+
     </div>
 
     <button
       id="playersButton"
-      class="iconButton"
+      class="glassButton"
     >
       Players
     </button>
+
   </header>
 
-  <!-- TURN DISPLAY -->
 
-  <div
-    id="turnPanel"
-    class="floatingPanel hidden"
-  >
-    <div id="turnLabel">
-      Turn
-    </div>
+  <!-- MAIN MENU -->
 
-    <div id="yourSide"></div>
+  <main id="menuScreen">
 
-    <button id="endTurnBtn">
-      End Turn
-    </button>
-  </div>
+    <section class="menuCard">
 
-  <!-- LOBBY -->
+      <div class="titleBlock">
 
-  <section
-    id="lobby"
-    class="modalPanel"
-  >
-    <h1>
-      Crisis in Gordistan
-    </h1>
+        <h1>
+          Crisis in Gordistan
+        </h1>
 
-    <p class="subtitle">
-      A turn-based hex-and-counter
-      geopolitical wargame.
-    </p>
+        <p>
+          Online hex-and-counter strategy game
+        </p>
 
-    <div id="homeControls">
+      </div>
+
+
+      <label
+        class="fieldLabel"
+        for="menuName"
+      >
+        Your name
+      </label>
+
+      <input
+        id="menuName"
+        maxlength="24"
+        placeholder="Name"
+      >
+
+
       <button
         id="createBtn"
-        class="primary"
+        class="primary full"
       >
-        Create Game
+        Create Lobby
       </button>
 
+
       <div class="joinRow">
+
         <input
           id="joinCode"
           maxlength="6"
-          placeholder="ROOM"
+          placeholder="ROOM CODE"
         >
 
         <button id="joinRoomBtn">
           Join
         </button>
+
       </div>
+
+
+      <div class="menuSection">
+
+        <div class="sectionHeader">
+
+          <strong>
+            Joinable Lobbies
+          </strong>
+
+          <button
+            id="refreshMenuBtn"
+            class="textButton"
+          >
+            Refresh
+          </button>
+
+        </div>
+
+        <div
+          id="joinableGames"
+          class="gameList"
+        ></div>
+
+      </div>
+
+
+      <div class="menuSection">
+
+        <strong>
+          My Current Games
+        </strong>
+
+        <div
+          id="currentGames"
+          class="gameList"
+        ></div>
+
+      </div>
+
+
+      <details class="menuSection">
+
+        <summary>
+          Finished Games
+        </summary>
+
+        <div
+          id="finishedGames"
+          class="gameList"
+        ></div>
+
+      </details>
+
+    </section>
+
+  </main>
+
+
+  <!-- LOBBY -->
+
+  <section
+    id="lobby"
+    class="sheet hidden"
+  >
+
+    <div class="sheetHeader">
+
+      <div>
+
+        <strong id="lobbyTitle">
+          Game Lobby
+        </strong>
+
+        <div
+          id="roomTag"
+          class="muted"
+        ></div>
+
+      </div>
+
+      <button id="leaveLobbyBtn">
+        Leave
+      </button>
+
     </div>
+
+
+    <label
+      class="fieldLabel"
+      for="playerName"
+    >
+      Your Name
+    </label>
+
+    <input
+      id="playerName"
+      maxlength="24"
+      placeholder="Your name"
+    >
+
+
+    <label
+      class="fieldLabel"
+      for="seat"
+    >
+      Side
+    </label>
+
+    <select id="seat">
+
+      <option value="0">
+        Coalition
+      </option>
+
+      <option value="1">
+        Iran
+      </option>
+
+      <option value="2">
+        Regional States
+      </option>
+
+      <option value="3">
+        Nonstate Forces
+      </option>
+
+    </select>
+
+
+    <button
+      id="takeSeatBtn"
+      class="primary full"
+    >
+      Take Side
+    </button>
+
 
     <div
-      id="seatBox"
-      class="hidden"
+      id="lobbyStatus"
+      class="statusLine"
+    ></div>
+
+
+    <div
+      id="lobbyPlayers"
+      class="playerList"
+    ></div>
+
+
+    <button
+      id="startBtn"
+      class="primary full"
     >
-      <input
-        id="playerName"
-        maxlength="24"
-        placeholder="Your name"
-      >
+      Start / Test Game
+    </button>
 
-      <select id="seat">
-        <option value="0">
-          Coalition
-        </option>
 
-        <option value="1">
-          Iran
-        </option>
+    <p class="tiny">
+      One player is enough for testing.
+      Multiplayer works normally with more.
+    </p>
 
-        <option value="2">
-          Regional States
-        </option>
-
-        <option value="3">
-          Nonstate Forces
-        </option>
-      </select>
-
-      <button
-        id="takeSeatBtn"
-        class="primary"
-      >
-        Take Side
-      </button>
-
-      <div
-        id="lobbyPlayers"
-        class="playerList"
-      ></div>
-
-      <button
-        id="startBtn"
-        class="startButton"
-      >
-        Start Game
-      </button>
-    </div>
   </section>
 
-  <!-- PLAYERS DRAWER -->
+
+  <!-- GAME MENU -->
+
+  <section
+    id="gameMenu"
+    class="drawer hidden"
+  >
+
+    <div class="drawerHeader">
+
+      <strong>
+        Game Menu
+      </strong>
+
+      <button id="closeGameMenu">
+        ×
+      </button>
+
+    </div>
+
+
+    <button
+      id="exitGameBtn"
+      class="full"
+    >
+      Exit to Main Menu
+    </button>
+
+
+    <button
+      id="finishGameBtn"
+      class="full danger"
+    >
+      Mark Game Finished
+    </button>
+
+
+    <div
+      id="roomCodeInMenu"
+      class="muted"
+    ></div>
+
+  </section>
+
+
+  <!-- PLAYERS -->
 
   <section
     id="playersDrawer"
     class="drawer hidden"
   >
-    <div class="drawerHeader">
-      <strong>Players</strong>
 
-      <button
-        id="closePlayers"
-        class="iconButton"
-      >
+    <div class="drawerHeader">
+
+      <strong>
+        Players / Turn Order
+      </strong>
+
+      <button id="closePlayers">
         ×
       </button>
+
     </div>
 
     <div id="playerList"></div>
 
     <div id="trackList"></div>
+
   </section>
+
 
   <!-- UNIT PANEL -->
 
@@ -171,39 +370,57 @@
     id="unitPanel"
     class="bottomPanel hidden"
   >
+
     <div id="selectedUnit"></div>
 
     <button id="clearSelection">
       Close
     </button>
+
   </section>
+
 
   <!-- LOG -->
 
   <button
     id="logButton"
-    class="logButton hidden"
+    class="floatingLog hidden"
   >
     Log
   </button>
+
 
   <section
     id="logDrawer"
     class="logDrawer hidden"
   >
-    <div class="drawerHeader">
-      <strong>Game Log</strong>
 
-      <button
-        id="closeLog"
-        class="iconButton"
-      >
+    <div class="drawerHeader">
+
+      <strong>
+        Game Log
+      </strong>
+
+      <button id="closeLog">
         ×
       </button>
+
     </div>
 
     <div id="log"></div>
+
   </section>
+
+
+  <!-- TURN -->
+
+  <button
+    id="endTurnBtn"
+    class="endTurn hidden"
+  >
+    End Turn
+  </button>
+
 
   <!-- LOADING -->
 
@@ -211,16 +428,22 @@
     id="loading"
     class="loading hidden"
   >
+
     <div class="spinner"></div>
+
     <div id="loadingText">
-      Loading…
+      Connecting…
     </div>
+
   </div>
+
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   ></script>
 
   <script src="/app.js"></script>
+
 </body>
+
 </html>
