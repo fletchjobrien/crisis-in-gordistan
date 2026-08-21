@@ -21,14 +21,6 @@ const SIDE_CLASSES = [
 ];
 
 
-/*
-  PERSISTENT DEVICE PLAYER ID
-
-  This lets the main menu know
-  which games belong to you after
-  you quit or revisit the website.
-*/
-
 let playerId =
   localStorage.cigPlayerId ||
   crypto.randomUUID();
@@ -64,10 +56,6 @@ let unitLayers = [];
 let placeLayers = [];
 
 
-/*
-  REMEMBER NAME
-*/
-
 const savedName =
   localStorage.cigPlayerName ||
   "";
@@ -83,23 +71,34 @@ $("#playerName").value =
 
 /*
   MAP
+
+  Keep the real geography, but CSS now
+  processes the tiles to look much more
+  like subdued printed wargame cartography.
 */
 
 const map =
   L.map(
     "map",
+
     {
       zoomControl: true,
 
       minZoom: 4,
 
-      maxZoom: 9
+      maxZoom: 9,
+
+      zoomSnap: .5,
+
+      wheelPxPerZoomLevel: 100
     }
-  ).setView(
+  )
+  .setView(
     [
       30.7,
       52.5
     ],
+
     5
   );
 
@@ -113,11 +112,12 @@ L.tileLayer(
     attribution:
       "&copy; OpenStreetMap contributors"
   }
-).addTo(map);
+)
+.addTo(map);
 
 
 /*
-  BUTTONS
+  UI BUTTONS
 */
 
 $("#createBtn").onclick =
@@ -152,21 +152,25 @@ $("#leaveLobbyBtn").onclick =
 
 $("#gameMenuBtn").onclick =
   () => {
+
     $("#gameMenu")
       .classList
       .remove(
         "hidden"
       );
+
   };
 
 
 $("#closeGameMenu").onclick =
   () => {
+
     $("#gameMenu")
       .classList
       .add(
         "hidden"
       );
+
   };
 
 
@@ -176,98 +180,123 @@ $("#exitGameBtn").onclick =
 
 $("#finishGameBtn").onclick =
   () => {
+
     send({
+
       type:
         "finish",
 
       playerId
+
     });
+
   };
 
 
 $("#playersButton").onclick =
   () => {
+
     $("#playersDrawer")
       .classList
       .toggle(
         "hidden"
       );
+
   };
 
 
 $("#closePlayers").onclick =
   () => {
+
     $("#playersDrawer")
       .classList
       .add(
         "hidden"
       );
+
   };
 
 
 $("#logButton").onclick =
   () => {
+
     $("#logDrawer")
       .classList
       .remove(
         "hidden"
       );
+
   };
 
 
 $("#closeLog").onclick =
   () => {
+
     $("#logDrawer")
       .classList
       .add(
         "hidden"
       );
+
   };
 
 
 $("#clearSelection").onclick =
   () => {
+
     selectedUnitId =
       null;
 
     render();
+
   };
 
 
 $("#endTurnBtn").onclick =
   () => {
+
     selectedUnitId =
       null;
 
+
     send({
+
       type:
         "endTurn",
 
       playerId
+
     });
+
 
     setTimeout(
       fetchCurrentState,
       100
     );
+
   };
 
 
 function rememberName(
   name
 ) {
+
   if (!name) {
     return;
   }
 
+
   localStorage.cigPlayerName =
     name;
+
 
   $("#menuName").value =
     name;
 
+
   $("#playerName").value =
     name;
+
 }
 
 
@@ -281,7 +310,8 @@ async function createGame() {
     (
       $("#menuName").value ||
       ""
-    ).trim() ||
+    )
+    .trim() ||
     "Player";
 
 
@@ -291,7 +321,7 @@ async function createGame() {
 
 
   showLoading(
-    "Creating lobby…"
+    "Preparing map…"
   );
 
 
@@ -312,9 +342,11 @@ async function createGame() {
 
           body:
             JSON.stringify({
+
               playerId,
 
               name
+
             })
         }
       );
@@ -336,12 +368,14 @@ async function createGame() {
     alert(
       "Could not create lobby."
     );
+
   }
+
 }
 
 
 /*
-  OPEN / RESUME ROOM
+  OPEN ROOM
 */
 
 async function openRoom(
@@ -352,8 +386,8 @@ async function openRoom(
     String(
       roomCode || ""
     )
-      .trim()
-      .toUpperCase();
+    .trim()
+    .toUpperCase();
 
 
   if (
@@ -367,6 +401,7 @@ async function openRoom(
     );
 
     return;
+
   }
 
 
@@ -394,14 +429,9 @@ async function openRoom(
 
 
   showLoading(
-    "Connecting…"
+    "Opening game…"
   );
 
-
-  /*
-    Close previous socket WITHOUT
-    triggering reconnect behavior.
-  */
 
   intentionalClose =
     true;
@@ -416,7 +446,8 @@ async function openRoom(
   }
 
 
-  ws = null;
+  ws =
+    null;
 
 
   intentionalClose =
@@ -431,27 +462,14 @@ async function openRoom(
   connectSocket();
 
 
-  /*
-    Critical fix:
-
-    don't wait on the WebSocket
-    before showing game state.
-
-    Fetch it immediately over HTTP.
-  */
-
   await fetchCurrentState();
 
-
-  /*
-    Remove loading even if Safari
-    takes a while to negotiate WS.
-  */
 
   setTimeout(
     hideLoading,
     800
   );
+
 }
 
 
@@ -541,12 +559,6 @@ function connectSocket() {
   socket.onerror =
     () => {
 
-      /*
-        Do nothing dramatic.
-
-        Polling keeps the game alive.
-      */
-
       startPolling();
 
     };
@@ -565,13 +577,6 @@ function connectSocket() {
 
       startPolling();
 
-
-      /*
-        Quietly reconnect.
-
-        No full-screen "Connecting"
-        screen here.
-      */
 
       setTimeout(
         () => {
@@ -600,13 +605,7 @@ function connectSocket() {
 
 
 /*
-  FALLBACK POLLING
-
-  Every second.
-
-  This is intentionally redundant
-  with WebSockets so iPhone Safari
-  cannot leave the UI stale.
+  STATE POLLING FALLBACK
 */
 
 function startPolling() {
@@ -625,10 +624,6 @@ function startPolling() {
 }
 
 
-/*
-  FETCH AUTHORITATIVE STATE
-*/
-
 async function fetchCurrentState() {
 
   if (!code) {
@@ -640,6 +635,7 @@ async function fetchCurrentState() {
 
     const response =
       await fetch(
+
         `/api/game/${code}?t=${Date.now()}`,
 
         {
@@ -649,9 +645,7 @@ async function fetchCurrentState() {
       );
 
 
-    if (
-      !response.ok
-    ) {
+    if (!response.ok) {
       return;
     }
 
@@ -681,10 +675,6 @@ async function fetchCurrentState() {
 }
 
 
-/*
-  APPLY SERVER STATE
-*/
-
 function applyState(
   newState
 ) {
@@ -700,15 +690,6 @@ function applyState(
 
 }
 
-
-/*
-  SEND
-
-  WebSocket is the fast path.
-
-  HTTP polling will reconcile
-  afterward automatically.
-*/
 
 function send(
   message
@@ -728,27 +709,20 @@ function send(
 
 
     return true;
+
   }
 
-
-  /*
-    Try reconnecting rather than
-    making the user refresh.
-  */
 
   connectSocket();
 
 
   return false;
+
 }
 
 
 /*
-  TAKE SIDE
-
-  This now immediately gives
-  visual feedback, then pulls
-  authoritative state again.
+  LOBBY CONTROLS
 */
 
 function takeSide() {
@@ -760,7 +734,8 @@ function takeSide() {
       $("#menuName").value ||
 
       ""
-    ).trim();
+    )
+    .trim();
 
 
   if (!name) {
@@ -770,6 +745,7 @@ function takeSide() {
     );
 
     return;
+
   }
 
 
@@ -784,6 +760,7 @@ function takeSide() {
 
 
   const message = {
+
     type:
       "join",
 
@@ -795,11 +772,14 @@ function takeSide() {
       Number(
         $("#seat").value
       )
+
   };
 
 
   if (
-    send(message)
+    send(
+      message
+    )
   ) {
 
     $("#lobbyStatus")
@@ -808,14 +788,11 @@ function takeSide() {
 
   } else {
 
-    /*
-      Socket happened to be down.
-      Try again very shortly.
-    */
-
     setTimeout(
       () =>
-        send(message),
+        send(
+          message
+        ),
 
       300
     );
@@ -837,14 +814,6 @@ function takeSide() {
 }
 
 
-/*
-  START
-
-  No indefinite loading screen.
-
-  One-player test games allowed.
-*/
-
 function startGame() {
 
   if (!state) {
@@ -863,6 +832,7 @@ function startGame() {
     );
 
     return;
+
   }
 
 
@@ -872,10 +842,12 @@ function startGame() {
 
 
   send({
+
     type:
       "start",
 
     playerId
+
   });
 
 
@@ -899,12 +871,6 @@ function startGame() {
 }
 
 
-/*
-  LEAVE WAITING LOBBY
-
-  Releases your side.
-*/
-
 function leaveLobby() {
 
   if (
@@ -915,10 +881,12 @@ function leaveLobby() {
   ) {
 
     send({
+
       type:
         "leaveLobby",
 
       playerId
+
     });
 
   }
@@ -930,16 +898,7 @@ function leaveLobby() {
 
 
 /*
-  EXIT AN ACTIVE GAME
-
-  Important:
-
-  This does NOT remove you
-  from the game.
-
-  Therefore it appears under
-  "My Current Games" and can
-  be resumed later.
+  EXIT / RESUME
 */
 
 function exitToMenu() {
@@ -980,7 +939,6 @@ function exitToMenu() {
   history.replaceState(
     null,
     "",
-
     location.pathname
   );
 
@@ -1061,7 +1019,7 @@ function exitToMenu() {
 
 
 /*
-  MASTER RENDER
+  RENDER
 */
 
 function render() {
@@ -1079,6 +1037,7 @@ function render() {
     renderLobby();
 
     return;
+
   }
 
 
@@ -1090,6 +1049,7 @@ function render() {
     exitToMenu();
 
     return;
+
   }
 
 
@@ -1150,13 +1110,13 @@ function renderLobby() {
 
     $("#lobbyStatus")
       .textContent =
-        `You are ${SIDES[me.seat]}.`;
+        `You command ${SIDES[me.seat]}.`;
 
   } else {
 
     $("#lobbyStatus")
       .textContent =
-        "Choose a side.";
+        "Select a side.";
 
   }
 
@@ -1170,23 +1130,11 @@ function renderLobby() {
       );
 
 
-  if (
-    !ordered.length
-  ) {
+  $("#lobbyPlayers")
+    .innerHTML =
+      ordered.length
 
-    $("#lobbyPlayers")
-      .innerHTML =
-        `
-        <div class="muted">
-          No players have taken a side yet.
-        </div>
-        `;
-
-  } else {
-
-    $("#lobbyPlayers")
-      .innerHTML =
-        ordered
+        ? ordered
           .map(
             (
               player,
@@ -1224,16 +1172,14 @@ function renderLobby() {
               </div>
               `
           )
-          .join("");
+          .join("")
 
-  }
+        : `
+          <div class="muted">
+            No commanders have taken a side.
+          </div>
+        `;
 
-
-  /*
-    Only need ONE player,
-    but it must be you / you
-    must have taken a side.
-  */
 
   $("#startBtn")
     .disabled =
@@ -1243,7 +1189,7 @@ function renderLobby() {
 
 
 /*
-  ACTIVE GAME
+  GAME
 */
 
 function renderGame() {
@@ -1297,7 +1243,7 @@ function renderGame() {
 
   $("#turnLabel")
     .textContent =
-      `TURN ${state.turn} · ${
+      `TURN ${state.turn} — ${
         active
           ? active.name
           : SIDES[
@@ -1309,8 +1255,10 @@ function renderGame() {
   $("#yourSide")
     .textContent =
       me
-        ? `You: ${SIDES[me.seat]}`
-        : "Spectating";
+        ? SIDES[
+            me.seat
+          ]
+        : "Observer";
 
 
   $("#endTurnBtn")
@@ -1346,7 +1294,7 @@ function renderGame() {
 
 
 /*
-  PLAYERS
+  PLAYER LIST
 */
 
 function renderPlayers() {
@@ -1397,13 +1345,13 @@ function renderPlayers() {
                 ${
                   player.id ===
                   playerId
-                    ? " (you)"
+                    ? " (YOU)"
                     : ""
                 }
 
                 ${
                   active
-                    ? " ← ACTIVE"
+                    ? " — ACTIVE"
                     : ""
                 }
 
@@ -1426,7 +1374,7 @@ function renderPlayers() {
 
 
 /*
-  TRACKS
+  POLITICAL TRACKS
 */
 
 function renderTracks() {
@@ -1434,21 +1382,26 @@ function renderTracks() {
   $("#trackList")
     .innerHTML =
       `
-      ESCALATION:
+      ESCALATION
+      &nbsp;
       ${
         state.tracks
           .escalation
       } / 6
+
       <br>
 
-      COALITION SUPPORT:
+      COALITION SUPPORT
+      &nbsp;
       ${
         state.tracks
           .coalitionSupport
       } / 6
+
       <br>
 
-      REGIONAL STABILITY:
+      REGIONAL STABILITY
+      &nbsp;
       ${
         state.tracks
           .regionalStability
@@ -1459,7 +1412,7 @@ function renderTracks() {
 
 
 /*
-  MAP HEXES
+  HEX GRID
 */
 
 function renderHexes() {
@@ -1487,6 +1440,7 @@ function renderHexes() {
 
     const polygon =
       L.polygon(
+
         createHexShape(
           hex.lat,
           hex.lng
@@ -1540,6 +1494,7 @@ function createHexShape(
 
 
   return [
+
     [
       lat,
       lng -
@@ -1584,13 +1539,14 @@ function createHexShape(
       lng -
         lngRadius / 2
     ]
+
   ];
 
 }
 
 
 /*
-  PLACE LABELS
+  CITY LABELS
 */
 
 function renderLocations() {
@@ -1618,6 +1574,7 @@ function renderLocations() {
 
     const marker =
       L.marker(
+
         [
           place.lat,
           place.lng
@@ -1629,6 +1586,7 @@ function renderLocations() {
 
           icon:
             L.divIcon({
+
               className:
                 "placeLabel",
 
@@ -1640,14 +1598,15 @@ function renderLocations() {
               iconSize:
                 [
                   100,
-                  20
+                  18
                 ],
 
               iconAnchor:
                 [
                   50,
-                  10
+                  9
                 ]
+
             })
         }
       );
@@ -1668,7 +1627,7 @@ function renderLocations() {
 
 
 /*
-  UNITS
+  WARGAME COUNTERS
 */
 
 function renderUnits() {
@@ -1729,6 +1688,12 @@ function renderUnits() {
       state.turn;
 
 
+    const unitClass =
+      counterUnitClass(
+        unit
+      );
+
+
     const icon =
       L.divIcon({
 
@@ -1737,37 +1702,64 @@ function renderUnits() {
 
         html:
           `
-          <div class="
-            unitMarker
-            ${
-              SIDE_CLASSES[
-                unit.owner
-              ]
-            }
-            ${
-              mine
-                ? "mine"
-                : ""
-            }
-            ${
-              selected
-                ? "selected"
-                : ""
-            }
-            ${
-              used
-                ? "used"
-                : ""
-            }
-          ">
+          <div
+            class="
+              unitMarker
+              ${
+                SIDE_CLASSES[
+                  unit.owner
+                ]
+              }
+              ${
+                mine
+                  ? "mine"
+                  : ""
+              }
+              ${
+                selected
+                  ? "selected"
+                  : ""
+              }
+              ${
+                used
+                  ? "used"
+                  : ""
+              }
+            "
+          >
 
-            ${
-              shortUnitName(
-                unit
-              )
-            }
+            <div class="counterDesignation">
+              ${
+                counterDesignation(
+                  unit
+                )
+              }
+            </div>
 
-            <span class="unitSteps">
+            <div
+              class="
+                counterSymbol
+                ${unitClass}
+              "
+            ></div>
+
+            <div class="counterFactors">
+
+              <span>
+                ${unit.attack}
+              </span>
+
+              <span>
+                ${unit.defense}
+              </span>
+
+              <span>
+                ${unit.move}
+              </span>
+
+            </div>
+
+            <span class="counterSteps">
               ${unit.steps}
             </span>
 
@@ -1776,20 +1768,22 @@ function renderUnits() {
 
         iconSize:
           [
-            38,
-            38
+            45,
+            45
           ],
 
         iconAnchor:
           [
-            19,
-            19
+            22,
+            22
           ]
+
       });
 
 
     const marker =
       L.marker(
+
         [
           hex.lat,
           hex.lng
@@ -1840,7 +1834,177 @@ function renderUnits() {
 
 
 /*
-  UNIT CLICK
+  Gives the counter a military symbol.
+
+  These are generic wargame/NATO-style
+  visual conventions rather than replicas
+  of any individual published counter.
+*/
+
+function counterUnitClass(
+  unit
+) {
+
+  if (
+    unit.domain ===
+    "naval"
+  ) {
+
+    return "naval";
+
+  }
+
+
+  const name =
+    unit.label
+      .toLowerCase();
+
+
+  if (
+    name.includes(
+      "carrier"
+    )
+  ) {
+
+    return "naval";
+
+  }
+
+
+  if (
+    name.includes(
+      "irregular"
+    )
+  ) {
+
+    return "irregular";
+
+  }
+
+
+  if (
+    name.includes(
+      "expeditionary"
+    )
+  ) {
+
+    return "armor";
+
+  }
+
+
+  return "infantry";
+
+}
+
+
+/*
+  Tiny top-line unit designation.
+*/
+
+function counterDesignation(
+  unit
+) {
+
+  const label =
+    unit.label;
+
+
+  if (
+    label.includes(
+      "I Corps"
+    )
+  ) {
+
+    return "I CORPS";
+
+  }
+
+
+  if (
+    label.includes(
+      "Expeditionary"
+    )
+  ) {
+
+    return "EXP FORCE";
+
+  }
+
+
+  if (
+    label.includes(
+      "Carrier"
+    )
+  ) {
+
+    return "CVBG";
+
+  }
+
+
+  if (
+    label.includes(
+      "Western"
+    )
+  ) {
+
+    return "WEST ARMY";
+
+  }
+
+
+  if (
+    label.includes(
+      "Central"
+    )
+  ) {
+
+    return "CENT ARMY";
+
+  }
+
+
+  if (
+    label.includes(
+      "Gulf Fleet"
+    )
+  ) {
+
+    return "GULF FLT";
+
+  }
+
+
+  if (
+    label.includes(
+      "Regional"
+    )
+  ) {
+
+    return "REGIONAL";
+
+  }
+
+
+  if (
+    label.includes(
+      "Irregular"
+    )
+  ) {
+
+    return "IRREG";
+
+  }
+
+
+  return "UNIT";
+
+}
+
+
+/*
+  UNIT SELECTION
 */
 
 function clickUnit(
@@ -1896,6 +2060,7 @@ function clickUnit(
     } else {
 
       send({
+
         type:
           "attack",
 
@@ -1906,6 +2071,7 @@ function clickUnit(
 
         defenderId:
           unit.id
+
       });
 
 
@@ -1929,7 +2095,7 @@ function clickUnit(
 
 
 /*
-  HEX CLICK
+  MOVE
 */
 
 function clickHex(
@@ -1952,11 +2118,14 @@ function clickHex(
     selected.owner !==
       me.seat
   ) {
+
     return;
+
   }
 
 
   send({
+
     type:
       "move",
 
@@ -1970,6 +2139,7 @@ function clickHex(
 
     r:
       hex.r
+
   });
 
 
@@ -1986,7 +2156,7 @@ function clickHex(
 
 
 /*
-  SELECTED UNIT
+  UNIT INFO
 */
 
 function renderSelected() {
@@ -2004,6 +2174,7 @@ function renderSelected() {
       );
 
     return;
+
   }
 
 
@@ -2025,11 +2196,11 @@ function renderSelected() {
         }
       </div>
 
-      A${unit.attack}
+      Attack ${unit.attack}
       ·
-      D${unit.defense}
+      Defense ${unit.defense}
       ·
-      M${unit.move}
+      Movement ${unit.move}
       ·
       ${unit.steps} steps
 
@@ -2039,7 +2210,7 @@ function renderSelected() {
         unit.movedTurn ===
         state.turn
 
-          ? "Moved"
+          ? "Movement expended"
 
           : "Movement available"
       }
@@ -2050,9 +2221,9 @@ function renderSelected() {
         unit.attackedTurn ===
         state.turn
 
-          ? "Attack used"
+          ? "Combat expended"
 
-          : "Attack available"
+          : "Combat available"
       }
       `;
 
@@ -2090,7 +2261,7 @@ function renderLog() {
 
 
 /*
-  MAIN MENU DIRECTORY
+  GAME DIRECTORY
 */
 
 async function loadDirectory() {
@@ -2099,6 +2270,7 @@ async function loadDirectory() {
 
     const response =
       await fetch(
+
         `/api/directory?playerId=${encodeURIComponent(playerId)}&t=${Date.now()}`,
 
         {
@@ -2147,10 +2319,6 @@ async function loadDirectory() {
 }
 
 
-/*
-  RENDER MENU GAME LIST
-*/
-
 function renderGameList(
   selector,
   games,
@@ -2174,6 +2342,7 @@ function renderGameList(
       `;
 
     return;
+
   }
 
 
@@ -2236,7 +2405,7 @@ function renderGameList(
 
                   ${
                     game.turn
-                      ? ` · turn ${game.turn}`
+                      ? ` · Turn ${game.turn}`
                       : ""
                   }
 
@@ -2293,15 +2462,19 @@ function renderGameList(
 
 
 /*
-  CLEAN UP MAP
+  CLEAR MAP
 */
 
 function clearMapLayers() {
 
   const allLayers = [
+
     ...hexLayers,
+
     ...unitLayers,
+
     ...placeLayers
+
   ];
 
 
@@ -2321,11 +2494,16 @@ function clearMapLayers() {
   }
 
 
-  hexLayers = [];
+  hexLayers =
+    [];
 
-  unitLayers = [];
 
-  placeLayers = [];
+  unitLayers =
+    [];
+
+
+  placeLayers =
+    [];
 
 }
 
@@ -2346,7 +2524,8 @@ function getMe() {
       player =>
         player.id ===
         playerId
-    ) || null
+    ) ||
+    null
   );
 
 }
@@ -2358,7 +2537,9 @@ function getSelectedUnit() {
     !state ||
     !selectedUnitId
   ) {
+
     return null;
+
   }
 
 
@@ -2367,67 +2548,9 @@ function getSelectedUnit() {
       unit =>
         unit.id ===
         selectedUnitId
-    ) || null
+    ) ||
+    null
   );
-
-}
-
-
-function shortUnitName(
-  unit
-) {
-
-  if (
-    unit.domain ===
-    "naval"
-  ) {
-
-    return (
-      unit.owner === 0
-        ? "CV"
-        : "NAV"
-    );
-
-  }
-
-
-  if (
-    unit.label.includes(
-      "Corps"
-    )
-  ) {
-    return "CORPS";
-  }
-
-
-  if (
-    unit.label.includes(
-      "Army"
-    )
-  ) {
-    return "ARMY";
-  }
-
-
-  if (
-    unit.label.includes(
-      "Expeditionary"
-    )
-  ) {
-    return "EXP";
-  }
-
-
-  if (
-    unit.label.includes(
-      "Regional"
-    )
-  ) {
-    return "REG";
-  }
-
-
-  return "IRR";
 
 }
 
@@ -2467,11 +2590,13 @@ function escapeHtml(
 
   return String(
     value
-  ).replace(
+  )
+  .replace(
     /[&<>"']/g,
 
     char =>
       ({
+
         "&":
           "&amp;",
 
@@ -2486,6 +2611,7 @@ function escapeHtml(
 
         "'":
           "&#039;"
+
       })[char]
   );
 
@@ -2493,10 +2619,7 @@ function escapeHtml(
 
 
 /*
-  INITIAL LOAD
-
-  Menu refreshes every 3 seconds
-  while you're sitting on it.
+  INITIAL MENU LOAD
 */
 
 loadDirectory();
@@ -2507,7 +2630,9 @@ directoryTimer =
     () => {
 
       if (!code) {
+
         loadDirectory();
+
       }
 
     },
@@ -2517,12 +2642,7 @@ directoryTimer =
 
 
 /*
-  OLD ROOM LINK
-
-  URLs like:
-  site.com/#ABC123
-
-  still work.
+  DIRECT ROOM LINKS
 */
 
 if (
