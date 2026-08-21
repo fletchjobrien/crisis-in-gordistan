@@ -1,672 +1,399 @@
 :root {
-  --paper: #ded8c7;
-  --map-paper: #e7e1d1;
-  --ink: #292820;
-  --muted: #767161;
+  --paper: #ddd7c5;
+  --paper-light: #eee9d9;
 
-  --panel: #e4dece;
-  --panel-dark: #b7ad98;
+  --ink: #282820;
+  --line: #615c4f;
 
-  --hex: rgba(78, 74, 63, 0.42);
+  --sea: #7fb2c4;
+  --sea-dark: #547f91;
 
-  --coalition: #b8c8d2;
-  --coalition-dark: #607786;
+  --iran: #d7d4b2;
+  --iraq: #ddd6bd;
+  --arabia: #ddca8e;
+  --turkey: #b8bd91;
+  --pakistan: #c9b88c;
 
-  --iran: #c4c7a5;
-  --iran-dark: #697052;
+  --mountain: #807b5f;
+  --forest: #76906a;
+  --desert: #d7c37e;
 
-  --regional: #d5bd80;
-  --regional-dark: #8a7040;
-
-  --nonstate: #c39d91;
-  --nonstate-dark: #76554e;
+  --coalition-counter: #b8ced8;
+  --iran-counter: #c8c99e;
+  --regional-counter: #dec581;
+  --nonstate-counter: #c99f92;
 }
+
 
 * {
   box-sizing: border-box;
 }
 
+
 html,
 body {
   margin: 0;
+
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
 
-  background: var(--paper);
-  color: var(--ink);
+  overflow: hidden;
+
+  background:
+    #b8b29f;
+
+  color:
+    var(--ink);
 
   font-family:
     Arial,
     Helvetica,
     sans-serif;
-
-  -webkit-text-size-adjust: 100%;
 }
+
 
 button,
 input,
 select {
   font: inherit;
-  min-width: 0;
-  max-width: 100%;
 }
+
 
 button {
-  border: 1px solid #4d493f;
-  border-radius: 1px;
+  border:
+    1px solid #514d42;
 
-  background: #ded8c9;
-  color: var(--ink);
+  border-radius: 0;
 
-  padding: 8px 11px;
+  background:
+    #ded8c8;
 
-  font-size: 12px;
+  color:
+    var(--ink);
+
+  padding:
+    8px 11px;
+
   font-weight: 700;
-
-  cursor: pointer;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.55);
 }
+
 
 button:active {
-  background: #cbc3b2;
+  background:
+    #cac2ae;
 }
 
-button:disabled {
-  opacity: .4;
-}
 
 input,
 select {
   width: 100%;
 
-  border: 1px solid #686252;
+  border:
+    1px solid #585449;
+
   border-radius: 0;
 
-  padding: 10px;
+  background:
+    #f2eddf;
 
-  background: #f2ede1;
-  color: var(--ink);
+  padding:
+    10px;
 }
+
 
 .hidden {
-  display: none !important;
+  display:
+    none !important;
 }
+
 
 .full {
   width: 100%;
 }
 
+
 .primary {
-  background: #5c6251;
-  border-color: #373b31;
-  color: #fff;
+  background:
+    #5a5f4e;
+
+  color: white;
 }
 
-.primary:active {
-  background: #4c5143;
-}
 
 .danger {
-  color: #7e3029;
-  border-color: #7e3029;
+  color:
+    #7d2c27;
 }
 
-.muted {
-  color: var(--muted);
-  font-size: 10px;
-}
 
-.tiny {
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.fieldLabel {
-  display: block;
-
-  margin: 11px 0 4px;
-
-  color: #595648;
+.smallText,
+small {
+  color:
+    #686355;
 
   font-size: 9px;
-  font-weight: 800;
-
-  letter-spacing: .08em;
-  text-transform: uppercase;
 }
 
 
 /* =========================================================
-   MAP
+   BOARD
    ========================================================= */
 
 #map {
   position: fixed;
+
   inset: 0;
-
-  background: var(--map-paper);
-}
-
-
-/*
-  This is important.
-
-  It turns the normal OSM map from a modern web-map appearance
-  into something closer to subdued printed cartography.
-*/
-
-.leaflet-tile-pane {
-  filter:
-    grayscale(.35)
-    sepia(.28)
-    saturate(.62)
-    contrast(.88)
-    brightness(1.09);
-}
-
-
-/*
-  Slight printed-paper overlay.
-*/
-
-#map::after {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  z-index: 450;
-
-  pointer-events: none;
-
-  opacity: .16;
-
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgba(70,60,45,.025) 0,
-      rgba(70,60,45,.025) 1px,
-      transparent 1px,
-      transparent 4px
-    );
-}
-
-
-/*
-  Remove rounded modern Leaflet UI look.
-*/
-
-.leaflet-bar {
-  border: 1px solid #4e4a40 !important;
-  border-radius: 0 !important;
-
-  box-shadow: none !important;
-}
-
-.leaflet-bar a {
-  border-radius: 0 !important;
-
-  background: #ddd6c6 !important;
-
-  color: #37342d !important;
-}
-
-
-/* =========================================================
-   MAIN MENU
-   ========================================================= */
-
-#menuScreen {
-  position: fixed;
-  inset: 0;
-
-  z-index: 3000;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding:
-    calc(env(safe-area-inset-top) + 20px)
-    max(15px, env(safe-area-inset-right))
-    calc(env(safe-area-inset-bottom) + 25px)
-    max(15px, env(safe-area-inset-left));
 
   background:
-    linear-gradient(
-      rgba(226,220,204,.96),
-      rgba(218,210,192,.96)
-    );
+    var(--sea);
 }
 
-.menuCard {
-  width: 100%;
-  max-width: 500px;
 
-  margin: auto;
-}
-
-.titleBlock {
-  margin: 12px 0 24px;
-
-  padding-bottom: 14px;
-
-  border-bottom: 4px solid #34362f;
-}
-
-.titleBlock h1 {
-  margin: 0;
+.leaflet-container {
+  background:
+    var(--sea);
 
   font-family:
-    "Arial Narrow",
     Arial,
     sans-serif;
-
-  font-size: clamp(29px, 9vw, 45px);
-
-  font-weight: 900;
-
-  letter-spacing: -.06em;
-
-  text-transform: uppercase;
 }
 
-.titleBlock p {
-  margin: 2px 0 0;
 
-  color: #575348;
-
-  font-family: Georgia, serif;
-
-  font-size: 12px;
-  font-style: italic;
+.leaflet-control-attribution {
+  display: none;
 }
 
-.joinRow {
-  display: grid;
 
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
+.leaflet-bar {
+  border:
+    1px solid #544f42 !important;
 
-  gap: 6px;
+  border-radius:
+    0 !important;
 
-  margin-top: 8px;
+  box-shadow:
+    2px 2px 0
+    rgba(0,0,0,.18)
+    !important;
 }
 
-#joinCode {
-  letter-spacing: .12em;
-  text-transform: uppercase;
+
+.leaflet-bar a {
+  border-radius:
+    0 !important;
+
+  background:
+    #ddd6c5 !important;
+
+  color:
+    #302e29 !important;
 }
 
-.menuSection {
-  margin-top: 23px;
 
-  padding-top: 9px;
+/* =========================================================
+   CARTOGRAPHIC LAYERS
+   ========================================================= */
 
-  border-top: 2px solid #8c8573;
+.countryFill {
+  stroke:
+    #77715f;
+
+  stroke-width:
+    1.1;
+
+  fill-opacity:
+    1;
 }
 
-.menuSection > strong,
-.menuSection summary,
-.sectionHeader strong {
-  font-size: 11px;
-  font-weight: 900;
 
-  letter-spacing: .04em;
-  text-transform: uppercase;
+.iranArea {
+  fill:
+    var(--iran);
 }
 
-.sectionHeader {
-  display: flex;
 
-  align-items: center;
-  justify-content: space-between;
+.iraqArea {
+  fill:
+    var(--iraq);
 }
 
-.textButton {
+
+.arabiaArea {
+  fill:
+    var(--arabia);
+}
+
+
+.turkeyArea {
+  fill:
+    var(--turkey);
+}
+
+
+.pakistanArea {
+  fill:
+    var(--pakistan);
+}
+
+
+.otherArea {
+  fill:
+    #d2ceb7;
+}
+
+
+.mountainArea {
+  fill:
+    #81795d;
+
+  fill-opacity:
+    .83;
+
+  stroke:
+    #5e5844;
+
+  stroke-width:
+    .6;
+}
+
+
+.desertArea {
+  fill:
+    var(--desert);
+
+  fill-opacity:
+    .58;
+
+  stroke:
+    none;
+}
+
+
+.riverLine {
+  fill: none;
+
+  stroke:
+    #488da9;
+
+  stroke-width:
+    3;
+
+  stroke-linecap:
+    round;
+
+  stroke-linejoin:
+    round;
+}
+
+
+.roadLine {
+  fill: none;
+
+  stroke:
+    #987150;
+
+  stroke-width:
+    1.25;
+
+  stroke-opacity:
+    .8;
+}
+
+
+.borderLine {
+  fill: none;
+
+  stroke:
+    #545147;
+
+  stroke-width:
+    1.35;
+
+  stroke-dasharray:
+    3 2;
+}
+
+
+.boardTitle {
+  background:
+    transparent;
+
   border: 0;
-  box-shadow: none;
-  padding: 2px;
 
-  background: none;
-
-  color: #696454;
-
-  font-size: 10px;
-}
-
-.gameRow {
-  display: grid;
-
-  grid-template-columns:
-    minmax(0,1fr)
-    auto;
-
-  align-items: center;
-
-  gap: 8px;
-
-  padding: 8px 0;
-
-  border-bottom: 1px solid rgba(70,65,55,.28);
-}
-
-.gameCode {
-  font-family: "Arial Narrow", Arial, sans-serif;
-
-  font-weight: 900;
-  letter-spacing: .09em;
-}
-
-.gameDesc {
-  overflow: hidden;
-
-  color: var(--muted);
-
-  font-size: 9px;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-
-/* =========================================================
-   LOBBY
-   ========================================================= */
-
-.sheet {
-  position: fixed;
-
-  z-index: 3100;
-
-  left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
-
-  top:
-    calc(
-      env(safe-area-inset-top)
-      + 10px
+  color:
+    rgba(
+      67,
+      64,
+      52,
+      .55
     );
-
-  bottom:
-    calc(
-      env(safe-area-inset-bottom)
-      + 10px
-    );
-
-  width: auto;
-  max-width: 430px;
-
-  margin: auto;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding: 15px;
-
-  background: #dfd8c8;
-
-  border: 2px solid #4b473d;
-
-  box-shadow:
-    4px 5px 0 rgba(70,65,55,.25);
-}
-
-.sheetHeader {
-  display: flex;
-
-  justify-content: space-between;
-  align-items: flex-start;
-
-  padding-bottom: 9px;
-
-  border-bottom: 2px solid #77705f;
-}
-
-#lobbyTitle {
-  font-family:
-    "Arial Narrow",
-    Arial,
-    sans-serif;
-
-  font-size: 19px;
-  font-weight: 900;
-
-  text-transform: uppercase;
-}
-
-.statusLine {
-  min-height: 17px;
-
-  margin-top: 7px;
-
-  font-family: Georgia, serif;
-  font-size: 11px;
-  font-style: italic;
-
-  color: #656052;
-}
-
-.playerList {
-  margin: 9px 0 15px;
-}
-
-.lobbyPlayer,
-.playerCard {
-  padding: 8px;
-
-  border-bottom: 1px solid #aca491;
-
-  font-size: 11px;
-}
-
-.playerSeat {
-  display: block;
-
-  margin-top: 1px;
-
-  color: #726d5e;
-
-  font-size: 9px;
-
-  text-transform: uppercase;
-}
-
-.playerCard.active {
-  border-left: 4px solid #3e4037;
-
-  background: rgba(255,255,255,.25);
-}
-
-
-/* =========================================================
-   TOP GAME BAR
-   ========================================================= */
-
-#topbar {
-  position: fixed;
-
-  top:
-    calc(
-      env(safe-area-inset-top)
-      + 7px
-    );
-
-  left:
-    max(
-      7px,
-      env(safe-area-inset-left)
-    );
-
-  right:
-    max(
-      7px,
-      env(safe-area-inset-right)
-    );
-
-  z-index: 1200;
-
-  display: grid;
-
-  grid-template-columns:
-    auto
-    minmax(0,1fr)
-    auto;
-
-  align-items: start;
-
-  gap: 5px;
-
-  pointer-events: none;
-}
-
-.glassButton,
-#turnMini {
-  pointer-events: auto;
-
-  background: #dcd5c5;
-
-  border: 1px solid #595448;
-
-  box-shadow:
-    2px 2px 0 rgba(60,55,45,.18);
-
-  backdrop-filter: none;
-}
-
-.glassButton {
-  padding: 7px 9px;
-}
-
-#turnMini {
-  min-width: 0;
-
-  padding: 6px 8px;
-
-  text-align: center;
-}
-
-#turnMini strong {
-  display: block;
-
-  overflow: hidden;
 
   font-family:
-    "Arial Narrow",
-    Arial,
-    sans-serif;
+    Georgia,
+    serif;
 
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 24px;
 
-  letter-spacing: .02em;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  text-transform: uppercase;
-}
-
-#turnMini span {
-  display: block;
-
-  font-size: 8px;
-
-  color: #666154;
-
-  text-transform: uppercase;
-}
-
-
-/* =========================================================
-   DRAWERS
-   ========================================================= */
-
-.drawer {
-  position: fixed;
-
-  z-index: 2200;
-
-  top:
-    calc(
-      env(safe-area-inset-top)
-      + 55px
-    );
-
-  right:
-    max(
-      7px,
-      env(safe-area-inset-right)
-    );
-
-  width:
-    min(
-      330px,
-      calc(100vw - 14px)
-    );
-
-  max-height:
-    calc(
-      100dvh
-      - env(safe-area-inset-top)
-      - env(safe-area-inset-bottom)
-      - 70px
-    );
-
-  overflow-y: auto;
-
-  padding: 10px;
-
-  background: #ddd6c6;
-
-  border: 2px solid #514d42;
-
-  box-shadow:
-    4px 4px 0 rgba(60,55,45,.2);
-}
-
-.drawerHeader {
-  display: flex;
-
-  justify-content: space-between;
-  align-items: center;
-
-  margin-bottom: 8px;
-
-  padding-bottom: 6px;
-
-  border-bottom: 2px solid #77705e;
-}
-
-.drawerHeader strong {
-  font-family:
-    "Arial Narrow",
-    Arial,
-    sans-serif;
-
-  font-size: 13px;
-
-  text-transform: uppercase;
-}
-
-#trackList {
-  margin-top: 12px;
-
-  padding: 8px;
-
-  background: #c9c1af;
-
-  border: 1px solid #6e6858;
-
-  font-size: 9px;
   font-weight: 700;
 
-  line-height: 1.8;
+  letter-spacing:
+    .12em;
+
+  text-align: center;
+
+  text-shadow:
+    1px 1px
+    rgba(255,255,255,.45);
+}
+
+
+.cityDot {
+  width: 7px;
+  height: 7px;
+
+  margin:
+    -3px 0 0 -3px;
+
+  border:
+    1px solid #443d32;
+
+  border-radius:
+    50%;
+
+  background:
+    #e9a438;
+}
+
+
+.cityLabel {
+  background:
+    transparent;
+
+  border: 0;
+
+  color:
+    #34322c;
+
+  font-family:
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  text-transform:
+    uppercase;
+
+  white-space:
+    nowrap;
+
+  text-shadow:
+    -1px -1px #eee8d4,
+    1px -1px #eee8d4,
+    -1px 1px #eee8d4,
+    1px 1px #eee8d4;
 }
 
 
@@ -675,434 +402,773 @@ select {
    ========================================================= */
 
 .hexPath {
-  fill: rgba(238,233,218,.02);
+  fill:
+    rgba(
+      255,
+      255,
+      245,
+      .025
+    );
 
-  stroke: var(--hex);
+  stroke:
+    rgba(
+      69,
+      66,
+      56,
+      .47
+    );
 
-  stroke-width: .8px;
+  stroke-width:
+    .75;
 }
+
 
 .hexPath:hover {
-  fill: rgba(255,248,220,.12);
+  fill:
+    rgba(
+      255,
+      249,
+      210,
+      .18
+    );
 }
 
 
-/*
-  Slightly stronger grid when zoomed in via SVG scaling.
-*/
-
-.leaflet-overlay-pane svg {
-  shape-rendering: geometricPrecision;
+.seaHex {
+  fill:
+    rgba(
+      62,
+      139,
+      171,
+      .08
+    );
 }
 
 
 /* =========================================================
-   PLACE LABELS
+   COUNTERS
    ========================================================= */
 
-.placeLabel {
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+.unitMarker {
+  position: relative;
 
-  color: #403d35;
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+
+  grid-template-rows:
+    10px
+    25px
+    13px;
+
+  border:
+    2px solid #24231d;
+
+  background:
+    #ddd;
+
+  color:
+    #171713;
+
+  overflow: hidden;
+
+  box-shadow:
+    2px 3px 1px
+    rgba(37,33,25,.38);
+
+  user-select: none;
+}
+
+
+.unitMarker.coalition {
+  background:
+    var(--coalition-counter);
+}
+
+
+.unitMarker.iran {
+  background:
+    var(--iran-counter);
+}
+
+
+.unitMarker.regional {
+  background:
+    var(--regional-counter);
+}
+
+
+.unitMarker.nonstate {
+  background:
+    var(--nonstate-counter);
+}
+
+
+/*
+  IMPORTANT:
+  absolutely no transparency for counters.
+*/
+
+.unitMarker,
+.unitMarker.used {
+  opacity: 1;
+}
+
+
+.counterDesignation {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    2px 7px 0 3px;
+
+  overflow: hidden;
 
   font-family:
     "Arial Narrow",
     Arial,
     sans-serif;
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 6px;
 
-  letter-spacing: .02em;
+  font-weight: 900;
 
-  text-transform: uppercase;
+  white-space:
+    nowrap;
 
-  text-align: center;
-
-  text-shadow:
-    -1px -1px 0 #eee8d8,
-    1px -1px 0 #eee8d8,
-    -1px 1px 0 #eee8d8,
-    1px 1px 0 #eee8d8;
+  text-overflow:
+    ellipsis;
 }
 
-
-/* =========================================================
-   WARGAME COUNTERS
-   ========================================================= */
-
-.unitMarker {
-  position: relative;
-
-  width: 45px;
-  height: 45px;
-
-  display: grid;
-
-  grid-template-rows:
-    8px
-    1fr
-    11px;
-
-  overflow: hidden;
-
-  border: 1.6px solid #27271f;
-
-  color: #151510;
-
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
-
-  font-weight: 800;
-
-  line-height: 1;
-
-  box-shadow:
-    1px 2px 1px rgba(45,40,30,.35);
-
-  transform-origin: center;
-
-  user-select: none;
-}
-
-
-/*
-  Small top formation/designation line.
-*/
-
-.counterDesignation {
-  padding-top: 2px;
-
-  overflow: hidden;
-
-  font-size: 5.5px;
-
-  letter-spacing: .015em;
-
-  text-align: center;
-
-  white-space: nowrap;
-}
-
-
-/*
-  NATO-ish / abstract formation symbol box.
-*/
 
 .counterSymbol {
-  position: relative;
+  display: flex;
 
-  width: 27px;
-  height: 16px;
-
-  margin: auto;
-
-  border: 1px solid #222;
-
-  background: rgba(255,255,255,.16);
+  align-items: center;
+  justify-content: center;
 }
 
 
-/* infantry X */
+.counterSymbol svg {
+  display: block;
 
-.counterSymbol.infantry::before,
-.counterSymbol.infantry::after {
-  content: "";
+  width: 29px;
+  height: 18px;
 
-  position: absolute;
-
-  left: 12px;
-  top: -2px;
-
-  width: 1px;
-  height: 19px;
-
-  background: #222;
+  overflow: visible;
 }
 
-.counterSymbol.infantry::before {
-  transform: rotate(58deg);
-}
-
-.counterSymbol.infantry::after {
-  transform: rotate(-58deg);
-}
-
-
-/* armor oval */
-
-.counterSymbol.armor::after {
-  content: "";
-
-  position: absolute;
-
-  left: 5px;
-  right: 5px;
-  top: 4px;
-  bottom: 4px;
-
-  border: 1px solid #222;
-
-  border-radius: 50%;
-}
-
-
-/* naval wave */
-
-.counterSymbol.naval::before,
-.counterSymbol.naval::after {
-  content: "";
-
-  position: absolute;
-
-  left: 4px;
-
-  width: 17px;
-  height: 4px;
-
-  border-bottom: 1px solid #222;
-
-  border-radius: 50%;
-}
-
-.counterSymbol.naval::before {
-  top: 3px;
-}
-
-.counterSymbol.naval::after {
-  top: 8px;
-}
-
-
-/* irregular dot + slash */
-
-.counterSymbol.irregular::before {
-  content: "◆";
-
-  position: absolute;
-
-  inset: 0;
-
-  display: grid;
-
-  place-items: center;
-
-  font-size: 8px;
-}
-
-
-/*
-  Combat factors at bottom, classic left-center-right arrangement.
-*/
 
 .counterFactors {
   display: grid;
 
   grid-template-columns:
-    1fr
-    1fr
-    1fr;
+    repeat(3, 1fr);
 
   align-items: center;
 
-  padding: 0 3px 2px;
+  padding:
+    0 4px 2px;
 
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
+  font-size: 10px;
 
-  font-size: 9px;
   font-weight: 900;
+
+  line-height: 1;
 }
 
-.counterFactors span:first-child {
+
+.counterFactors span:nth-child(1) {
   text-align: left;
 }
+
 
 .counterFactors span:nth-child(2) {
   text-align: center;
 }
 
-.counterFactors span:last-child {
+
+.counterFactors span:nth-child(3) {
   text-align: right;
 }
 
 
-/*
-  Step value in tiny upper-right corner.
-*/
-
 .counterSteps {
   position: absolute;
 
-  top: 1px;
   right: 2px;
+  top: 2px;
 
-  font-size: 5px;
+  font-size: 6px;
+
+  font-weight: 900;
 }
 
-
-/*
-  Player colors deliberately muted,
-  closer to printed counter stock.
-*/
-
-.unitMarker.coalition {
-  background:
-    linear-gradient(
-      135deg,
-      #c8d5dc,
-      var(--coalition)
-    );
-
-  border-color:
-    #364854;
-}
-
-.unitMarker.iran {
-  background:
-    linear-gradient(
-      135deg,
-      #d1d3b5,
-      var(--iran)
-    );
-
-  border-color:
-    #4d543d;
-}
-
-.unitMarker.regional {
-  background:
-    linear-gradient(
-      135deg,
-      #dfcc99,
-      var(--regional)
-    );
-
-  border-color:
-    #675630;
-}
-
-.unitMarker.nonstate {
-  background:
-    linear-gradient(
-      135deg,
-      #d1ada2,
-      var(--nonstate)
-    );
-
-  border-color:
-    #63443e;
-}
-
-
-/*
-  Your counters get only a subtle emphasis,
-  not the giant glowing browser-game outline.
-*/
 
 .unitMarker.mine {
-  box-shadow:
-    0 0 0 1px #f5efd8,
-    0 0 0 3px rgba(38,38,30,.7),
-    1px 2px 1px rgba(40,35,25,.3);
+  outline:
+    2px solid
+    rgba(
+      255,
+      249,
+      213,
+      .95
+    );
+
+  outline-offset:
+    1px;
 }
 
-
-/*
-  Selected counter rises like a physical counter.
-*/
 
 .unitMarker.selected {
   transform:
-    translateY(-3px)
-    scale(1.08);
+    translateY(-4px);
 
-  z-index: 5000;
+  outline:
+    3px solid
+    #27251e;
+
+  outline-offset:
+    2px;
 
   box-shadow:
-    0 0 0 2px #fff6cf,
-    0 0 0 4px #27271e,
-    3px 6px 4px rgba(30,25,20,.32);
+    4px 7px 3px
+    rgba(
+      30,
+      26,
+      20,
+      .35
+    );
 }
 
 
-.unitMarker.used {
-  filter:
-    saturate(.55)
-    brightness(.94);
+.unitMarker.used::after {
+  content: "";
 
-  opacity: .72;
+  position: absolute;
+
+  inset: 0;
+
+  border:
+    2px solid
+    rgba(
+      65,
+      55,
+      45,
+      .34
+    );
+
+  pointer-events: none;
 }
 
 
 /* =========================================================
-   SELECTED UNIT PANEL
+   STACK
    ========================================================= */
 
-.bottomPanel {
+.stackMarker {
+  position: relative;
+
+  width: 58px;
+  height: 58px;
+}
+
+
+.stackCounter {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+}
+
+
+.stackCounter:nth-child(2) {
+  left: 4px;
+  top: -4px;
+}
+
+
+.stackCounter:nth-child(3) {
+  left: 8px;
+  top: -8px;
+}
+
+
+.stackBadge {
+  position: absolute;
+
+  right: -1px;
+  top: -10px;
+
+  z-index: 40;
+
+  min-width: 19px;
+  height: 19px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border:
+    2px solid #29271f;
+
+  border-radius:
+    50%;
+
+  background:
+    #eee8d8;
+
+  color:
+    #222;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  box-shadow:
+    1px 2px 1px
+    rgba(0,0,0,.25);
+}
+
+
+.stackPanel {
   position: fixed;
 
-  z-index: 1300;
+  z-index: 2400;
+
+  left:
+    max(
+      8px,
+      env(
+        safe-area-inset-left
+      )
+    );
+
+  right:
+    max(
+      8px,
+      env(
+        safe-area-inset-right
+      )
+    );
+
+  bottom:
+    calc(
+      env(
+        safe-area-inset-bottom
+      ) + 8px
+    );
+
+  max-width: 430px;
+
+  margin: auto;
+
+  padding: 10px;
+
+  background:
+    #dcd5c3;
+
+  border:
+    2px solid #514c40;
+
+  box-shadow:
+    4px 5px 0
+    rgba(40,35,28,.24);
+}
+
+
+.stackUnit {
+  display: grid;
+
+  grid-template-columns:
+    54px
+    minmax(0,1fr)
+    auto;
+
+  gap: 9px;
+
+  align-items: center;
+
+  padding:
+    8px 0;
+
+  border-bottom:
+    1px solid #aaa18c;
+}
+
+
+.stackMiniCounter {
+  transform:
+    scale(.92);
+
+  transform-origin:
+    left center;
+}
+
+
+.stackUnitName {
+  font-size: 11px;
+
+  font-weight: 800;
+}
+
+
+.stackUnitStats {
+  color:
+    #686254;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   GENERAL PANELS
+   ========================================================= */
+
+#topbar {
+  position: fixed;
+
+  z-index: 1400;
+
+  top:
+    calc(
+      env(
+        safe-area-inset-top
+      ) + 7px
+    );
 
   left:
     max(
       7px,
-      env(safe-area-inset-left)
+      env(
+        safe-area-inset-left
+      )
     );
 
   right:
     max(
       7px,
-      env(safe-area-inset-right)
+      env(
+        safe-area-inset-right
+      )
+    );
+
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(0,1fr)
+    auto;
+
+  gap: 6px;
+
+  pointer-events: none;
+}
+
+
+.boardButton,
+#turnMini {
+  pointer-events: auto;
+
+  background:
+    #ddd6c5;
+
+  border:
+    1px solid #555044;
+
+  box-shadow:
+    2px 2px 0
+    rgba(0,0,0,.18);
+}
+
+
+#turnMini {
+  padding: 6px;
+
+  text-align: center;
+}
+
+
+#turnMini strong {
+  display: block;
+
+  font-size: 12px;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow:
+    ellipsis;
+}
+
+
+#turnMini span {
+  display: block;
+
+  color:
+    #696355;
+
+  font-size: 8px;
+}
+
+
+.paperPanel,
+.sidePanel,
+.logPanel {
+  background:
+    #ddd6c4;
+
+  border:
+    2px solid #514c40;
+
+  box-shadow:
+    4px 5px 0
+    rgba(50,45,35,.2);
+}
+
+
+.paperPanel {
+  position: fixed;
+
+  z-index: 3100;
+
+  left:
+    max(
+      10px,
+      env(
+        safe-area-inset-left
+      )
+    );
+
+  right:
+    max(
+      10px,
+      env(
+        safe-area-inset-right
+      )
+    );
+
+  top:
+    calc(
+      env(
+        safe-area-inset-top
+      ) + 10px
     );
 
   bottom:
     calc(
-      env(safe-area-inset-bottom)
-      + 7px
+      env(
+        safe-area-inset-bottom
+      ) + 10px
     );
 
-  width: auto;
-  max-width: 460px;
+  max-width: 430px;
+
+  margin: auto;
+
+  padding: 14px;
+
+  overflow-y: auto;
+}
+
+
+.sidePanel {
+  position: fixed;
+
+  z-index: 2200;
+
+  right:
+    max(
+      7px,
+      env(
+        safe-area-inset-right
+      )
+    );
+
+  top:
+    calc(
+      env(
+        safe-area-inset-top
+      ) + 58px
+    );
+
+  width:
+    min(
+      330px,
+      calc(
+        100vw - 14px
+      )
+    );
+
+  padding: 10px;
+}
+
+
+.panelHeader {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-bottom: 9px;
+
+  padding-bottom: 7px;
+
+  border-bottom:
+    2px solid #817967;
+}
+
+
+#lobby label,
+#menuScreen label {
+  display: block;
+
+  margin:
+    10px 0 4px;
+
+  color:
+    #655f50;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  text-transform: uppercase;
+}
+
+
+#lobbyStatus {
+  margin:
+    8px 0;
+
+  color:
+    #676153;
+
+  font-size: 10px;
+}
+
+
+.lobbyPlayer,
+.playerCard {
+  padding:
+    7px;
+
+  border-bottom:
+    1px solid #aba38f;
+
+  font-size: 11px;
+}
+
+
+.playerCard.active {
+  border-left:
+    4px solid #4d5042;
+
+  font-weight: 800;
+}
+
+
+.playerSeat {
+  display: block;
+
+  color:
+    #6b6557;
+
+  font-size: 8px;
+
+  text-transform: uppercase;
+}
+
+
+#trackList {
+  margin-top: 12px;
+
+  padding: 8px;
+
+  border:
+    1px solid #6b6558;
+
+  background:
+    #c7bfad;
+
+  font-size: 9px;
+
+  line-height: 1.8;
+}
+
+
+/* =========================================================
+   SELECTED UNIT
+   ========================================================= */
+
+.bottomPanel {
+  position: fixed;
+
+  z-index: 1500;
+
+  left:
+    max(
+      7px,
+      env(
+        safe-area-inset-left
+      )
+    );
+
+  right:
+    max(
+      7px,
+      env(
+        safe-area-inset-right
+      )
+    );
+
+  bottom:
+    calc(
+      env(
+        safe-area-inset-bottom
+      ) + 7px
+    );
+
+  max-width: 470px;
 
   margin: auto;
 
   display: flex;
 
-  justify-content: space-between;
+  gap: 9px;
+
   align-items: center;
 
-  gap: 8px;
+  justify-content: space-between;
 
-  padding: 8px;
+  padding: 9px;
 
-  background: #ddd5c4;
+  background:
+    #ddd6c4;
 
-  border: 2px solid #514c40;
-
-  box-shadow:
-    3px 3px 0 rgba(55,50,40,.2);
+  border:
+    2px solid #514c40;
 }
+
 
 #selectedUnit {
-  min-width: 0;
-
-  font-size: 9px;
+  font-size: 10px;
 }
 
+
 .unitTitle {
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 
-  font-size: 11px;
+  font-size: 12px;
+
   font-weight: 900;
-
-  text-transform: uppercase;
 }
 
 
@@ -1114,36 +1180,40 @@ select {
 .floatingLog {
   position: fixed;
 
-  z-index: 1250;
+  z-index: 1350;
 
   bottom:
     calc(
-      env(safe-area-inset-bottom)
-      + 7px
+      env(
+        safe-area-inset-bottom
+      ) + 7px
     );
-
-  background: #ddd6c5;
-
-  border: 1px solid #514d41;
 }
+
 
 .endTurn {
   left:
     max(
       7px,
-      env(safe-area-inset-left)
+      env(
+        safe-area-inset-left
+      )
     );
 }
+
 
 .floatingLog {
   right:
     max(
       7px,
-      env(safe-area-inset-right)
+      env(
+        safe-area-inset-right
+      )
     );
 }
 
-.logDrawer {
+
+.logPanel {
   position: fixed;
 
   z-index: 2300;
@@ -1151,45 +1221,230 @@ select {
   left:
     max(
       7px,
-      env(safe-area-inset-left)
+      env(
+        safe-area-inset-left
+      )
     );
 
   right:
     max(
       7px,
-      env(safe-area-inset-right)
+      env(
+        safe-area-inset-right
+      )
     );
 
   bottom:
     calc(
-      env(safe-area-inset-bottom)
-      + 7px
+      env(
+        safe-area-inset-bottom
+      ) + 7px
     );
 
-  width: auto;
   max-width: 430px;
 
   margin-left: auto;
 
   max-height: 40dvh;
 
-  overflow-y: auto;
-
   padding: 10px;
 
-  background: #ded7c6;
-
-  border: 2px solid #514c40;
+  overflow-y: auto;
 }
 
+
 .logLine {
-  padding: 5px 0;
+  padding:
+    5px 0;
 
-  border-bottom: 1px dotted #938b77;
+  border-bottom:
+    1px dotted #928a77;
 
-  font-family: Georgia, serif;
+  font-family:
+    Georgia,
+    serif;
 
   font-size: 10px;
+}
+
+
+/* =========================================================
+   MAIN MENU
+   ========================================================= */
+
+#menuScreen {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 3000;
+
+  overflow-y: auto;
+
+  padding:
+    calc(
+      env(
+        safe-area-inset-top
+      ) + 20px
+    )
+    max(
+      14px,
+      env(
+        safe-area-inset-right
+      )
+    )
+    calc(
+      env(
+        safe-area-inset-bottom
+      ) + 25px
+    )
+    max(
+      14px,
+      env(
+        safe-area-inset-left
+      )
+    );
+
+  background:
+    #d6d0be;
+}
+
+
+.menuCard {
+  max-width: 520px;
+
+  margin: auto;
+}
+
+
+.menuCard h1 {
+  margin: 0;
+
+  font-family:
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size:
+    clamp(
+      37px,
+      11vw,
+      59px
+    );
+
+  line-height: .78;
+
+  letter-spacing:
+    -.065em;
+}
+
+
+.menuCard h1 span {
+  display: block;
+
+  margin-top: 8px;
+
+  font-size: .54em;
+
+  letter-spacing:
+    .02em;
+}
+
+
+.subtitle {
+  margin:
+    11px 0 22px;
+
+  font-family:
+    Georgia,
+    serif;
+
+  font-size: 12px;
+
+  font-style: italic;
+}
+
+
+.joinRow {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    auto;
+
+  gap: 6px;
+
+  margin-top: 7px;
+}
+
+
+.menuSection {
+  margin-top: 23px;
+
+  padding-top: 8px;
+
+  border-top:
+    2px solid #817967;
+}
+
+
+.sectionHeader {
+  display: flex;
+
+  justify-content: space-between;
+}
+
+
+.textButton {
+  border: 0;
+
+  background: none;
+
+  box-shadow: none;
+
+  padding: 0;
+}
+
+
+.gameRow {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    auto;
+
+  gap: 8px;
+
+  align-items: center;
+
+  padding:
+    8px 0;
+
+  border-bottom:
+    1px solid #aaa18c;
+}
+
+
+.gameCode {
+  font-weight: 900;
+
+  letter-spacing:
+    .07em;
+}
+
+
+.gameDesc {
+  overflow: hidden;
+
+  color:
+    #6f695b;
+
+  font-size: 9px;
+
+  white-space: nowrap;
+
+  text-overflow:
+    ellipsis;
 }
 
 
@@ -1215,66 +1470,45 @@ select {
 
   background:
     rgba(
-      224,
-      218,
-      202,
+      214,
+      208,
+      190,
       .94
     );
-
-  font-family: Georgia, serif;
-
-  font-size: 11px;
-  font-style: italic;
 }
 
+
 .spinner {
-  width: 26px;
-  height: 26px;
+  width: 27px;
+  height: 27px;
 
-  border: 3px solid #98917e;
-  border-top-color: #36362e;
+  border:
+    3px solid #938b79;
 
-  border-radius: 50%;
+  border-top-color:
+    #34322b;
+
+  border-radius:
+    50%;
 
   animation:
     spin .8s linear infinite;
 }
 
+
 @keyframes spin {
   to {
-    transform: rotate(360deg);
+    transform:
+      rotate(360deg);
   }
 }
 
-
-/* =========================================================
-   PHONE
-   ========================================================= */
 
 @media (max-width: 600px) {
 
   .leaflet-control-zoom {
     margin-top:
-      104px !important;
-  }
-
-  .unitMarker {
-    width: 42px;
-    height: 42px;
-
-    grid-template-rows:
-      7px
-      1fr
-      10px;
-  }
-
-  .counterSymbol {
-    width: 25px;
-    height: 14px;
-  }
-
-  .counterFactors {
-    font-size: 8px;
+      108px !important;
   }
 
 }
