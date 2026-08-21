@@ -1,8 +1,6 @@
 const $ =
   selector =>
-    document.querySelector(
-      selector
-    );
+    document.querySelector(selector);
 
 
 const SIDES = [
@@ -31,34 +29,25 @@ localStorage.cigPlayerId =
 
 
 let code = null;
-
 let ws = null;
-
 let state = null;
 
-let selectedUnitId =
-  null;
+let selectedUnitId = null;
 
-let pollTimer =
-  null;
-
-let directoryTimer =
-  null;
-
-let intentionalClose =
-  false;
-
+let pollTimer = null;
+let directoryTimer = null;
+let intentionalClose = false;
 
 let hexLayers = [];
-
 let unitLayers = [];
+let mapLayers = [];
 
-let placeLayers = [];
+let stackQ = null;
+let stackR = null;
 
 
 const savedName =
-  localStorage.cigPlayerName ||
-  "";
+  localStorage.cigPlayerName || "";
 
 
 $("#menuName").value =
@@ -69,56 +58,46 @@ $("#playerName").value =
   savedName;
 
 
-/*
-  MAP
-
-  Keep the real geography, but CSS now
-  processes the tiles to look much more
-  like subdued printed wargame cartography.
-*/
+/* =========================================================
+   MAP
+   ========================================================= */
 
 const map =
   L.map(
     "map",
-
     {
       zoomControl: true,
 
+      attributionControl: false,
+
       minZoom: 4,
 
-      maxZoom: 9,
+      maxZoom: 8,
 
-      zoomSnap: .5,
+      zoomSnap: .25,
 
       wheelPxPerZoomLevel: 100
     }
   )
   .setView(
-    [
-      30.7,
-      52.5
-    ],
-
+    [31, 52],
     5
   );
 
 
-L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-
-  {
-    maxZoom: 19,
-
-    attribution:
-      "&copy; OpenStreetMap contributors"
-  }
-)
-.addTo(map);
-
-
 /*
-  UI BUTTONS
+  NO OPENSTREETMAP TILE LAYER.
+
+  We build a boardgame-style
+  vector map ourselves.
 */
+
+drawStrategicMap();
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 $("#createBtn").onclick =
   createGame;
@@ -151,27 +130,17 @@ $("#leaveLobbyBtn").onclick =
 
 
 $("#gameMenuBtn").onclick =
-  () => {
-
+  () =>
     $("#gameMenu")
       .classList
-      .remove(
-        "hidden"
-      );
-
-  };
+      .remove("hidden");
 
 
 $("#closeGameMenu").onclick =
-  () => {
-
+  () =>
     $("#gameMenu")
       .classList
-      .add(
-        "hidden"
-      );
-
-  };
+      .add("hidden");
 
 
 $("#exitGameBtn").onclick =
@@ -180,160 +149,561 @@ $("#exitGameBtn").onclick =
 
 $("#finishGameBtn").onclick =
   () => {
-
     send({
-
-      type:
-        "finish",
-
+      type: "finish",
       playerId
-
     });
-
   };
 
 
 $("#playersButton").onclick =
-  () => {
-
+  () =>
     $("#playersDrawer")
       .classList
-      .toggle(
-        "hidden"
-      );
-
-  };
+      .toggle("hidden");
 
 
 $("#closePlayers").onclick =
-  () => {
-
+  () =>
     $("#playersDrawer")
       .classList
-      .add(
-        "hidden"
-      );
-
-  };
+      .add("hidden");
 
 
 $("#logButton").onclick =
-  () => {
-
+  () =>
     $("#logDrawer")
       .classList
-      .remove(
-        "hidden"
-      );
-
-  };
+      .remove("hidden");
 
 
 $("#closeLog").onclick =
-  () => {
-
+  () =>
     $("#logDrawer")
       .classList
-      .add(
-        "hidden"
-      );
-
-  };
+      .add("hidden");
 
 
 $("#clearSelection").onclick =
   () => {
-
-    selectedUnitId =
-      null;
-
+    selectedUnitId = null;
     render();
+  };
 
+
+$("#closeStack").onclick =
+  () => {
+    stackQ = null;
+    stackR = null;
+
+    $("#stackPanel")
+      .classList
+      .add("hidden");
   };
 
 
 $("#endTurnBtn").onclick =
   () => {
-
-    selectedUnitId =
-      null;
-
+    selectedUnitId = null;
 
     send({
-
-      type:
-        "endTurn",
-
+      type: "endTurn",
       playerId
-
     });
-
 
     setTimeout(
       fetchCurrentState,
       100
     );
-
   };
 
 
-function rememberName(
-  name
-) {
+/* =========================================================
+   VECTOR BOARD MAP
+   ========================================================= */
 
-  if (!name) {
-    return;
+function drawStrategicMap() {
+  clearStrategicMap();
+
+  /*
+    The polygons are intentionally
+    stylized boardgame geography,
+    not GIS-precision boundaries.
+  */
+
+  addCountry(
+    [
+      [39.7, 44.0],
+      [39.4, 48.5],
+      [38.0, 49.3],
+      [36.8, 53.2],
+      [38.0, 57.3],
+      [37.3, 60.4],
+      [35.0, 61.2],
+      [31.0, 61.0],
+      [27.4, 59.3],
+      [25.2, 57.1],
+      [25.0, 54.5],
+      [27.0, 52.0],
+      [29.5, 48.0],
+      [32.0, 46.0],
+      [35.0, 45.2]
+    ],
+    "iranArea"
+  );
+
+  addCountry(
+    [
+      [37.3, 42.8],
+      [37.2, 46.0],
+      [35.5, 46.5],
+      [33.2, 46.0],
+      [30.2, 47.8],
+      [29.0, 46.2],
+      [30.0, 42.5],
+      [33.0, 41.0],
+      [36.0, 41.7]
+    ],
+    "iraqArea"
+  );
+
+  addCountry(
+    [
+      [31.0, 46.0],
+      [29.3, 48.0],
+      [28.5, 49.0],
+      [26.2, 50.2],
+      [24.0, 52.0],
+      [22.0, 55.0],
+      [21.5, 46.0],
+      [25.2, 43.0],
+      [29.0, 43.0]
+    ],
+    "arabiaArea"
+  );
+
+  addCountry(
+    [
+      [40.5, 39.0],
+      [41.0, 51.0],
+      [39.2, 49.0],
+      [38.0, 45.0],
+      [37.0, 42.0]
+    ],
+    "turkeyArea"
+  );
+
+  addCountry(
+    [
+      [31.5, 61.0],
+      [35.0, 61.2],
+      [37.0, 63.5],
+      [30.0, 66.0],
+      [24.0, 64.0],
+      [25.0, 58.0]
+    ],
+    "pakistanArea"
+  );
+
+  /*
+    Zagros mountain belt.
+  */
+
+  addPolygon(
+    [
+      [38.0, 44.3],
+      [37.0, 46.5],
+      [35.5, 47.5],
+      [34.0, 49.0],
+      [32.0, 50.0],
+      [30.2, 51.5],
+      [28.5, 53.5],
+      [27.0, 55.0],
+      [28.2, 56.2],
+      [30.1, 54.8],
+      [32.0, 53.0],
+      [34.0, 51.8],
+      [36.0, 50.0],
+      [38.6, 47.2]
+    ],
+    "mountainArea"
+  );
+
+  /*
+    Alborz.
+  */
+
+  addPolygon(
+    [
+      [36.0, 49.0],
+      [36.8, 50.5],
+      [37.2, 53.5],
+      [36.7, 56.5],
+      [35.9, 55.2],
+      [35.6, 52.0]
+    ],
+    "mountainArea"
+  );
+
+  /*
+    Arabian desert.
+  */
+
+  addPolygon(
+    [
+      [29.0, 44.0],
+      [28.5, 49.0],
+      [25.0, 52.5],
+      [22.0, 55.5],
+      [20.0, 46.0],
+      [24.0, 42.0]
+    ],
+    "desertArea"
+  );
+
+
+  /*
+    Tigris / Euphrates.
+  */
+
+  addLine(
+    [
+      [37.0, 39.8],
+      [36.0, 41.5],
+      [34.8, 43.2],
+      [33.3, 44.4],
+      [31.4, 46.2],
+      [30.4, 47.5]
+    ],
+    "riverLine"
+  );
+
+
+  addLine(
+    [
+      [38.0, 38.2],
+      [36.5, 40.0],
+      [35.0, 41.0],
+      [33.5, 43.0],
+      [32.0, 44.5],
+      [30.5, 46.5]
+    ],
+    "riverLine"
+  );
+
+
+  /*
+    Main road network.
+  */
+
+  addLine(
+    [
+      [35.69, 51.39],
+      [34.31, 47.07],
+      [33.31, 44.36]
+    ],
+    "roadLine"
+  );
+
+
+  addLine(
+    [
+      [35.69, 51.39],
+      [32.65, 51.67],
+      [29.59, 52.58],
+      [27.18, 56.27]
+    ],
+    "roadLine"
+  );
+
+
+  addLine(
+    [
+      [33.31, 44.36],
+      [30.51, 47.82],
+      [29.37, 47.98],
+      [26.22, 50.59]
+    ],
+    "roadLine"
+  );
+
+
+  addLine(
+    [
+      [29.37, 47.98],
+      [25.29, 51.53],
+      [24.45, 54.38]
+    ],
+    "roadLine"
+  );
+
+
+  addLine(
+    [
+      [24.45, 54.38],
+      [23.59, 58.38]
+    ],
+    "roadLine"
+  );
+
+
+  /*
+    Board labels.
+  */
+
+  addLargeLabel(
+    32.5,
+    54.5,
+    "IRAN"
+  );
+
+  addLargeLabel(
+    33.0,
+    43.4,
+    "IRAQ"
+  );
+
+  addLargeLabel(
+    23.5,
+    47.0,
+    "ARABIAN PENINSULA"
+  );
+
+
+  /*
+    Cities.
+  */
+
+  const cities = [
+    ["TEHRAN", 35.689, 51.389],
+    ["TABRIZ", 38.080, 46.291],
+    ["ISFAHAN", 32.654, 51.668],
+    ["SHIRAZ", 29.592, 52.584],
+    ["AHVAZ", 31.318, 48.671],
+    ["BANDAR ABBAS", 27.183, 56.267],
+    ["MASHHAD", 36.260, 59.616],
+
+    ["BAGHDAD", 33.315, 44.366],
+    ["BASRA", 30.508, 47.783],
+    ["ERBIL", 36.191, 44.009],
+
+    ["KUWAIT CITY", 29.376, 47.977],
+    ["MANAMA", 26.224, 50.588],
+    ["DOHA", 25.285, 51.531],
+    ["ABU DHABI", 24.454, 54.377],
+    ["MUSCAT", 23.588, 58.383]
+  ];
+
+  for (
+    const [
+      name,
+      lat,
+      lng
+    ] of cities
+  ) {
+    addCity(
+      name,
+      lat,
+      lng
+    );
+  }
+}
+
+
+function clearStrategicMap() {
+  for (
+    const layer of
+    mapLayers
+  ) {
+    try {
+      map.removeLayer(layer);
+    } catch {}
   }
 
+  mapLayers = [];
+}
+
+
+function addCountry(
+  points,
+  className
+) {
+  addPolygon(
+    points,
+    `countryFill ${className}`
+  );
+}
+
+
+function addPolygon(
+  points,
+  className
+) {
+  const layer =
+    L.polygon(
+      points,
+      {
+        className,
+        interactive: false
+      }
+    );
+
+  layer.addTo(map);
+
+  mapLayers.push(layer);
+}
+
+
+function addLine(
+  points,
+  className
+) {
+  const layer =
+    L.polyline(
+      points,
+      {
+        className,
+        interactive: false
+      }
+    );
+
+  layer.addTo(map);
+
+  mapLayers.push(layer);
+}
+
+
+function addLargeLabel(
+  lat,
+  lng,
+  text
+) {
+  const marker =
+    L.marker(
+      [lat, lng],
+      {
+        interactive: false,
+
+        icon:
+          L.divIcon({
+            className:
+              "boardTitle",
+
+            html:
+              text,
+
+            iconSize:
+              [230, 35],
+
+            iconAnchor:
+              [115, 18]
+          })
+      }
+    );
+
+  marker.addTo(map);
+
+  mapLayers.push(marker);
+}
+
+
+function addCity(
+  name,
+  lat,
+  lng
+) {
+  const dot =
+    L.marker(
+      [lat, lng],
+      {
+        interactive: false,
+
+        icon:
+          L.divIcon({
+            className:
+              "cityDot",
+
+            iconSize:
+              [7, 7],
+
+            iconAnchor:
+              [3, 3]
+          })
+      }
+    );
+
+  dot.addTo(map);
+
+  mapLayers.push(dot);
+
+
+  const label =
+    L.marker(
+      [lat, lng],
+      {
+        interactive: false,
+
+        icon:
+          L.divIcon({
+            className:
+              "cityLabel",
+
+            html:
+              name,
+
+            iconSize:
+              [120, 20],
+
+            iconAnchor:
+              [-7, 10]
+          })
+      }
+    );
+
+  label.addTo(map);
+
+  mapLayers.push(label);
+}
+
+
+/* =========================================================
+   NETWORKING
+   ========================================================= */
+
+function rememberName(name) {
+  if (!name) return;
 
   localStorage.cigPlayerName =
     name;
 
-
   $("#menuName").value =
     name;
 
-
   $("#playerName").value =
     name;
-
 }
 
 
-/*
-  CREATE GAME
-*/
-
 async function createGame() {
-
   const name =
     (
       $("#menuName").value ||
       ""
-    )
-    .trim() ||
+    ).trim() ||
     "Player";
 
-
-  rememberName(
-    name
-  );
-
+  rememberName(name);
 
   showLoading(
-    "Preparing map…"
+    "Preparing game…"
   );
 
-
   try {
-
     const response =
       await fetch(
         "/api/create",
-
         {
-          method:
-            "POST",
+          method: "POST",
 
           headers: {
             "content-type":
@@ -342,231 +712,136 @@ async function createGame() {
 
           body:
             JSON.stringify({
-
               playerId,
-
               name
-
             })
         }
       );
 
-
     const data =
       await response.json();
-
 
     await openRoom(
       data.code
     );
-
   } catch {
-
     hideLoading();
 
-
     alert(
-      "Could not create lobby."
+      "Could not create game."
     );
-
   }
-
 }
 
 
-/*
-  OPEN ROOM
-*/
-
-async function openRoom(
-  roomCode
-) {
-
+async function openRoom(roomCode) {
   roomCode =
-    String(
-      roomCode || ""
-    )
-    .trim()
-    .toUpperCase();
-
+    String(roomCode || "")
+      .trim()
+      .toUpperCase();
 
   if (
     !/^[A-Z0-9]{6}$/.test(
       roomCode
     )
   ) {
-
     alert(
       "Enter a six-character room code."
     );
 
     return;
-
   }
 
+  code = roomCode;
 
-  code =
-    roomCode;
+  location.hash = code;
 
+  $("#roomTag").textContent =
+    `ROOM ${code}`;
 
-  location.hash =
+  $("#roomCodeInMenu").textContent =
+    `ROOM ${code}`;
+
+  $("#joinCode").value =
     code;
-
-
-  $("#roomTag")
-    .textContent =
-      `ROOM ${code}`;
-
-
-  $("#roomCodeInMenu")
-    .textContent =
-      `Room ${code}`;
-
-
-  $("#joinCode")
-    .value =
-      code;
-
 
   showLoading(
     "Opening game…"
   );
 
-
-  intentionalClose =
-    true;
-
+  intentionalClose = true;
 
   if (ws) {
-
     try {
       ws.close();
     } catch {}
-
   }
 
-
-  ws =
-    null;
-
-
-  intentionalClose =
-    false;
-
+  intentionalClose = false;
 
   clearInterval(
     pollTimer
   );
 
-
   connectSocket();
-
 
   await fetchCurrentState();
 
-
   setTimeout(
     hideLoading,
-    800
+    700
   );
-
 }
 
 
-/*
-  WEBSOCKET
-*/
-
 function connectSocket() {
-
-  if (!code) {
-    return;
-  }
-
+  if (!code) return;
 
   const protocol =
     location.protocol ===
     "https:"
-
       ? "wss"
-
       : "ws";
-
 
   const socket =
     new WebSocket(
       `${protocol}://${location.host}/ws/${code}`
     );
 
-
-  ws =
-    socket;
-
+  ws = socket;
 
   socket.onopen =
     () => {
-
       hideLoading();
-
       startPolling();
-
     };
-
 
   socket.onmessage =
     event => {
-
       const message =
         JSON.parse(
           event.data
         );
 
-
       if (
-        message.type ===
-        "state"
+        message.type === "state"
       ) {
-
         applyState(
           message.state
         );
-
       }
 
-
       if (
-        message.type ===
-        "error"
+        message.type === "error"
       ) {
-
-        hideLoading();
-
-
-        $("#lobbyStatus")
-          .textContent =
-            message.message;
-
-
         alert(
           message.message
         );
-
       }
-
     };
-
-
-  socket.onerror =
-    () => {
-
-      startPolling();
-
-    };
-
 
   socket.onclose =
     () => {
-
       if (
         intentionalClose ||
         !code
@@ -574,195 +849,116 @@ function connectSocket() {
         return;
       }
 
-
       startPolling();
 
-
       setTimeout(
-        () => {
-
-          if (
-            code &&
-            (
-              !ws ||
-              ws.readyState ===
-                WebSocket.CLOSED
-            )
-          ) {
-
-            connectSocket();
-
-          }
-
-        },
-
+        connectSocket,
         1200
       );
-
     };
-
 }
 
 
-/*
-  STATE POLLING FALLBACK
-*/
-
 function startPolling() {
-
   clearInterval(
     pollTimer
   );
-
 
   pollTimer =
     setInterval(
       fetchCurrentState,
       1000
     );
-
 }
 
 
 async function fetchCurrentState() {
-
-  if (!code) {
-    return;
-  }
-
+  if (!code) return;
 
   try {
-
     const response =
       await fetch(
-
         `/api/game/${code}?t=${Date.now()}`,
-
         {
           cache:
             "no-store"
         }
       );
 
-
     if (!response.ok) {
       return;
     }
 
-
     const latest =
       await response.json();
 
-
     if (
       !state ||
-
       latest.updatedAt !==
         state.updatedAt ||
-
       latest.phase !==
         state.phase
     ) {
-
-      applyState(
-        latest
-      );
-
+      applyState(latest);
     }
-
   } catch {}
-
 }
 
 
-function applyState(
-  newState
-) {
-
-  state =
-    newState;
-
+function applyState(newState) {
+  state = newState;
 
   hideLoading();
 
-
   render();
-
 }
 
 
-function send(
-  message
-) {
-
+function send(message) {
   if (
     ws &&
     ws.readyState ===
       WebSocket.OPEN
   ) {
-
     ws.send(
       JSON.stringify(
         message
       )
     );
 
-
     return true;
-
   }
-
 
   connectSocket();
 
-
   return false;
-
 }
 
 
-/*
-  LOBBY CONTROLS
-*/
+/* =========================================================
+   LOBBY
+   ========================================================= */
 
 function takeSide() {
-
   const name =
     (
       $("#playerName").value ||
-
       $("#menuName").value ||
-
       ""
-    )
-    .trim();
-
+    ).trim();
 
   if (!name) {
-
     alert(
       "Enter your name."
     );
 
     return;
-
   }
 
-
-  rememberName(
-    name
-  );
-
-
-  $("#lobbyStatus")
-    .textContent =
-      "Joining…";
-
+  rememberName(name);
 
   const message = {
-
-    type:
-      "join",
+    type: "join",
 
     playerId,
 
@@ -772,169 +968,84 @@ function takeSide() {
       Number(
         $("#seat").value
       )
-
   };
 
-
-  if (
-    send(
-      message
-    )
-  ) {
-
-    $("#lobbyStatus")
-      .textContent =
-        "Side selected.";
-
-  } else {
-
+  if (!send(message)) {
     setTimeout(
       () =>
-        send(
-          message
-        ),
-
+        send(message),
       300
     );
-
   }
-
 
   setTimeout(
     fetchCurrentState,
     150
   );
-
-
-  setTimeout(
-    fetchCurrentState,
-    500
-  );
-
 }
 
 
 function startGame() {
-
-  if (!state) {
-    return;
-  }
-
-
-  const me =
-    getMe();
-
-
-  if (!me) {
-
+  if (!getMe()) {
     alert(
       "Take a side first."
     );
 
     return;
-
   }
 
-
-  $("#lobbyStatus")
-    .textContent =
-      "Starting game…";
-
-
   send({
-
-    type:
-      "start",
-
+    type: "start",
     playerId
-
   });
 
-
   setTimeout(
     fetchCurrentState,
-    100
+    150
   );
-
-
-  setTimeout(
-    fetchCurrentState,
-    400
-  );
-
-
-  setTimeout(
-    fetchCurrentState,
-    900
-  );
-
 }
 
 
 function leaveLobby() {
-
   if (
-    state &&
-    state.phase ===
-      "lobby" &&
+    state?.phase === "lobby" &&
     getMe()
   ) {
-
     send({
-
       type:
         "leaveLobby",
 
       playerId
-
     });
-
   }
 
-
   exitToMenu();
-
 }
 
 
-/*
-  EXIT / RESUME
-*/
-
 function exitToMenu() {
-
-  intentionalClose =
-    true;
-
+  intentionalClose = true;
 
   if (ws) {
-
     try {
       ws.close();
     } catch {}
-
   }
-
-
-  ws = null;
-
 
   clearInterval(
     pollTimer
   );
 
+  ws = null;
 
-  code =
-    null;
+  code = null;
 
+  state = null;
 
-  state =
-    null;
+  selectedUnitId = null;
 
-
-  selectedUnitId =
-    null;
-
+  stackQ = null;
+  stackR = null;
 
   history.replaceState(
     null,
@@ -942,292 +1053,171 @@ function exitToMenu() {
     location.pathname
   );
 
-
-  clearMapLayers();
-
+  clearUnitLayers();
 
   $("#lobby")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#topbar")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#gameMenu")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#playersDrawer")
     .classList
-    .add(
-      "hidden"
-    );
+    .add("hidden");
 
-
-  $("#logDrawer")
+  $("#stackPanel")
     .classList
-    .add(
-      "hidden"
-    );
-
-
-  $("#logButton")
-    .classList
-    .add(
-      "hidden"
-    );
-
-
-  $("#endTurnBtn")
-    .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#unitPanel")
     .classList
-    .add(
-      "hidden"
-    );
+    .add("hidden");
 
+  $("#logDrawer")
+    .classList
+    .add("hidden");
+
+  $("#logButton")
+    .classList
+    .add("hidden");
+
+  $("#endTurnBtn")
+    .classList
+    .add("hidden");
 
   $("#menuScreen")
     .classList
-    .remove(
-      "hidden"
-    );
+    .remove("hidden");
 
-
-  intentionalClose =
-    false;
-
+  intentionalClose = false;
 
   loadDirectory();
-
 }
 
 
-/*
-  RENDER
-*/
+/* =========================================================
+   RENDER
+   ========================================================= */
 
 function render() {
-
-  if (!state) {
-    return;
-  }
-
+  if (!state) return;
 
   if (
-    state.phase ===
-    "lobby"
+    state.phase === "lobby"
   ) {
-
     renderLobby();
 
     return;
-
   }
 
-
   if (
-    state.phase ===
-    "finished"
+    state.phase === "finished"
   ) {
-
     exitToMenu();
 
     return;
-
   }
 
-
   renderGame();
-
 }
 
 
-/*
-  LOBBY
-*/
-
 function renderLobby() {
-
   $("#menuScreen")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#topbar")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#lobby")
     .classList
-    .remove(
-      "hidden"
-    );
-
-
-  $("#roomTag")
-    .textContent =
-      `ROOM ${state.code}`;
-
+    .remove("hidden");
 
   const me =
     getMe();
 
-
   if (me) {
+    $("#playerName").value =
+      me.name;
 
-    $("#playerName")
-      .value =
-        me.name;
+    $("#seat").value =
+      String(me.seat);
 
-
-    $("#seat")
-      .value =
-        String(
-          me.seat
-        );
-
-
-    $("#lobbyStatus")
-      .textContent =
-        `You command ${SIDES[me.seat]}.`;
-
+    $("#lobbyStatus").textContent =
+      `You command ${SIDES[me.seat]}.`;
   } else {
-
-    $("#lobbyStatus")
-      .textContent =
-        "Select a side.";
-
+    $("#lobbyStatus").textContent =
+      "Select a command.";
   }
-
 
   const ordered =
     [...state.players]
       .sort(
         (a, b) =>
-          a.seat -
-          b.seat
+          a.seat - b.seat
       );
 
+  $("#lobbyPlayers").innerHTML =
+    ordered.length
+      ? ordered.map(
+          player => `
+            <div class="lobbyPlayer">
 
-  $("#lobbyPlayers")
-    .innerHTML =
-      ordered.length
+              <strong>
+                ${escapeHtml(player.name)}
+                ${
+                  player.id === playerId
+                    ? " (YOU)"
+                    : ""
+                }
+              </strong>
 
-        ? ordered
-          .map(
-            (
-              player,
-              index
-            ) =>
-              `
-              <div class="lobbyPlayer">
+              <span class="playerSeat">
+                ${SIDES[player.seat]}
+              </span>
 
-                <strong>
-                  ${
-                    index + 1
-                  }.
-                  ${
-                    escapeHtml(
-                      player.name
-                    )
-                  }
+            </div>
+          `
+        ).join("")
+      : `
+        <div class="smallText">
+          No commanders assigned.
+        </div>
+      `;
 
-                  ${
-                    player.id ===
-                    playerId
-                      ? " (you)"
-                      : ""
-                  }
-                </strong>
-
-                <span class="playerSeat">
-                  ${
-                    SIDES[
-                      player.seat
-                    ]
-                  }
-                </span>
-
-              </div>
-              `
-          )
-          .join("")
-
-        : `
-          <div class="muted">
-            No commanders have taken a side.
-          </div>
-        `;
-
-
-  $("#startBtn")
-    .disabled =
-      !me;
-
+  $("#startBtn").disabled =
+    !me;
 }
 
 
-/*
-  GAME
-*/
-
 function renderGame() {
-
   $("#menuScreen")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#lobby")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 
   $("#topbar")
     .classList
-    .remove(
-      "hidden"
-    );
-
+    .remove("hidden");
 
   $("#logButton")
     .classList
-    .remove(
-      "hidden"
-    );
-
+    .remove("hidden");
 
   $("#endTurnBtn")
     .classList
-    .remove(
-      "hidden"
-    );
-
+    .remove("hidden");
 
   const active =
     state.players.find(
@@ -1236,784 +1226,778 @@ function renderGame() {
         state.activeSeat
     );
 
-
   const me =
     getMe();
 
-
-  $("#turnLabel")
-    .textContent =
-      `TURN ${state.turn} — ${
-        active
-          ? active.name
-          : SIDES[
-              state.activeSeat
-            ]
-      }`;
-
-
-  $("#yourSide")
-    .textContent =
-      me
-        ? SIDES[
-            me.seat
+  $("#turnLabel").textContent =
+    `TURN ${state.turn} — ${
+      active
+        ? active.name
+        : SIDES[
+            state.activeSeat
           ]
-        : "Observer";
+    }`;
 
+  $("#yourSide").textContent =
+    me
+      ? SIDES[me.seat]
+      : "Observer";
 
-  $("#endTurnBtn")
-    .disabled =
-      !me ||
-      me.seat !==
-        state.activeSeat;
-
+  $("#endTurnBtn").disabled =
+    !me ||
+    me.seat !==
+      state.activeSeat;
 
   renderPlayers();
-
   renderTracks();
-
   renderHexes();
-
-  renderLocations();
-
   renderUnits();
-
   renderSelected();
-
   renderLog();
 
+  if (
+    stackQ !== null &&
+    stackR !== null
+  ) {
+    renderStackPanel(
+      stackQ,
+      stackR
+    );
+  }
 
   setTimeout(
     () =>
       map.invalidateSize(),
-
     0
   );
-
 }
 
 
-/*
-  PLAYER LIST
-*/
+/* =========================================================
+   PLAYERS
+   ========================================================= */
 
 function renderPlayers() {
-
   const ordered =
     [...state.players]
       .sort(
         (a, b) =>
-          a.seat -
-          b.seat
+          a.seat - b.seat
       );
 
-
-  $("#playerList")
-    .innerHTML =
-      ordered
-        .map(
-          (
-            player,
-            index
-          ) => {
-
-            const active =
+  $("#playerList").innerHTML =
+    ordered.map(
+      player => `
+        <div
+          class="
+            playerCard
+            ${
               player.seat ===
-              state.activeSeat;
+              state.activeSeat
+                ? "active"
+                : ""
+            }
+          "
+        >
 
+          ${escapeHtml(player.name)}
 
-            return `
-              <div class="
-                playerCard
-                ${
-                  active
-                    ? "active"
-                    : ""
-                }
-              ">
-
-                ${
-                  index + 1
-                }.
-
-                ${
-                  escapeHtml(
-                    player.name
-                  )
-                }
-
-                ${
-                  player.id ===
-                  playerId
-                    ? " (YOU)"
-                    : ""
-                }
-
-                ${
-                  active
-                    ? " — ACTIVE"
-                    : ""
-                }
-
-                <span class="playerSeat">
-                  ${
-                    SIDES[
-                      player.seat
-                    ]
-                  }
-                </span>
-
-              </div>
-            `;
-
+          ${
+            player.id === playerId
+              ? " (YOU)"
+              : ""
           }
-        )
-        .join("");
 
+          <span class="playerSeat">
+            ${SIDES[player.seat]}
+          </span>
+
+        </div>
+      `
+    ).join("");
 }
 
-
-/*
-  POLITICAL TRACKS
-*/
 
 function renderTracks() {
+  $("#trackList").innerHTML =
+    `
+    ESCALATION
+    ${state.tracks.escalation}/6
 
-  $("#trackList")
-    .innerHTML =
-      `
-      ESCALATION
-      &nbsp;
-      ${
-        state.tracks
-          .escalation
-      } / 6
+    <br>
 
-      <br>
+    COALITION SUPPORT
+    ${state.tracks.coalitionSupport}/6
 
-      COALITION SUPPORT
-      &nbsp;
-      ${
-        state.tracks
-          .coalitionSupport
-      } / 6
+    <br>
 
-      <br>
-
-      REGIONAL STABILITY
-      &nbsp;
-      ${
-        state.tracks
-          .regionalStability
-      } / 6
-      `;
-
+    REGIONAL STABILITY
+    ${state.tracks.regionalStability}/6
+    `;
 }
 
 
-/*
-  HEX GRID
-*/
+/* =========================================================
+   PROPER HEXES
+   ========================================================= */
 
 function renderHexes() {
-
   for (
     const layer of
     hexLayers
   ) {
-
-    map.removeLayer(
-      layer
-    );
-
+    map.removeLayer(layer);
   }
 
+  hexLayers = [];
 
-  hexLayers =
-    [];
+  /*
+    These dimensions line up with
+    the server's hex-center spacing.
 
+    Pointy-top hex:
+      vertical radius = .95°
+      horizontal radius ≈ .82°
+  */
+
+  const radiusLat =
+    .95;
+
+  const radiusLng =
+    .93;
 
   for (
     const hex of
     state.hexes
   ) {
-
     const polygon =
       L.polygon(
-
-        createHexShape(
+        createPointyHex(
           hex.lat,
-          hex.lng
+          hex.lng,
+          radiusLat,
+          radiusLng
         ),
 
         {
           className:
-            "hexPath",
+            `hexPath ${
+              hex.domain === "sea"
+                ? "seaHex"
+                : ""
+            }`,
 
-          interactive:
-            true
+          interactive: true
         }
       );
 
-
     polygon.on(
       "click",
-
       () =>
-        clickHex(
-          hex
-        )
+        clickHex(hex)
     );
 
-
-    polygon.addTo(
-      map
-    );
-
+    polygon.addTo(map);
 
     hexLayers.push(
       polygon
     );
-
   }
-
 }
 
 
-function createHexShape(
+function createPointyHex(
   lat,
-  lng
+  lng,
+  radiusLat,
+  radiusLng
 ) {
-
-  const latRadius =
-    1.0;
-
-
-  const lngRadius =
-    1.15;
-
-
   return [
-
     [
-      lat,
-      lng -
-        lngRadius
+      lat + radiusLat,
+      lng
     ],
 
     [
-      lat +
-        latRadius,
-
-      lng -
-        lngRadius / 2
+      lat + radiusLat / 2,
+      lng + radiusLng
     ],
 
     [
-      lat +
-        latRadius,
-
-      lng +
-        lngRadius / 2
+      lat - radiusLat / 2,
+      lng + radiusLng
     ],
 
     [
-      lat,
-
-      lng +
-        lngRadius
+      lat - radiusLat,
+      lng
     ],
 
     [
-      lat -
-        latRadius,
-
-      lng +
-        lngRadius / 2
+      lat - radiusLat / 2,
+      lng - radiusLng
     ],
 
     [
-      lat -
-        latRadius,
-
-      lng -
-        lngRadius / 2
+      lat + radiusLat / 2,
+      lng - radiusLng
     ]
-
   ];
-
 }
 
 
-/*
-  CITY LABELS
-*/
-
-function renderLocations() {
-
-  for (
-    const layer of
-    placeLayers
-  ) {
-
-    map.removeLayer(
-      layer
-    );
-
-  }
-
-
-  placeLayers =
-    [];
-
-
-  for (
-    const place of
-    state.locations
-  ) {
-
-    const marker =
-      L.marker(
-
-        [
-          place.lat,
-          place.lng
-        ],
-
-        {
-          interactive:
-            false,
-
-          icon:
-            L.divIcon({
-
-              className:
-                "placeLabel",
-
-              html:
-                escapeHtml(
-                  place.name
-                ),
-
-              iconSize:
-                [
-                  100,
-                  18
-                ],
-
-              iconAnchor:
-                [
-                  50,
-                  9
-                ]
-
-            })
-        }
-      );
-
-
-    marker.addTo(
-      map
-    );
-
-
-    placeLayers.push(
-      marker
-    );
-
-  }
-
-}
-
-
-/*
-  WARGAME COUNTERS
-*/
+/* =========================================================
+   STACKED COUNTERS
+   ========================================================= */
 
 function renderUnits() {
+  clearUnitLayers();
+
+  const grouped =
+    groupUnitsByHex();
 
   for (
-    const layer of
-    unitLayers
+    const [
+      key,
+      units
+    ] of grouped
   ) {
+    const [q, r] =
+      key
+        .split(",")
+        .map(Number);
 
-    map.removeLayer(
-      layer
-    );
+    const hex =
+      state.hexes.find(
+        hex =>
+          hex.q === q &&
+          hex.r === r
+      );
 
+    if (!hex) continue;
+
+    const marker =
+      createStackMarker(
+        units,
+        hex
+      );
+
+    marker.addTo(map);
+
+    unitLayers.push(marker);
   }
+}
 
 
-  unitLayers =
-    [];
-
-
-  const me =
-    getMe();
-
+function groupUnitsByHex() {
+  const map =
+    new Map();
 
   for (
     const unit of
     state.units
   ) {
+    const key =
+      `${unit.q},${unit.r}`;
 
-    const hex =
-      state.hexes.find(
-        hex =>
-          hex.q ===
-            unit.q &&
-          hex.r ===
-            unit.r
+    if (!map.has(key)) {
+      map.set(
+        key,
+        []
       );
-
-
-    if (!hex) {
-      continue;
     }
 
+    map.get(key)
+      .push(unit);
+  }
 
-    const mine =
-      me &&
-      unit.owner ===
-        me.seat;
-
-
-    const selected =
-      selectedUnitId ===
-      unit.id;
+  return map;
+}
 
 
-    const used =
-      unit.attackedTurn ===
-      state.turn;
+function createStackMarker(
+  units,
+  hex
+) {
+  /*
+    Only visually expose up to
+    three counters in the little
+    pile. The badge gives the full
+    stack size.
+  */
+
+  const visible =
+    units.slice(0, 3);
+
+  const stackHTML =
+    visible.map(
+      (
+        unit,
+        index
+      ) => `
+        <div
+          class="stackCounter"
+          style="
+            left:${index * 4}px;
+            top:${-index * 4}px;
+            z-index:${10 + index};
+          "
+        >
+          ${counterHTML(unit)}
+        </div>
+      `
+    ).join("");
 
 
-    const unitClass =
-      counterUnitClass(
-        unit
-      );
+  const badge =
+    units.length > 1
+      ? `
+        <div class="stackBadge">
+          ${units.length}
+        </div>
+      `
+      : "";
 
 
-    const icon =
-      L.divIcon({
+  const icon =
+    L.divIcon({
+      className: "",
 
-        className:
-          "",
+      html:
+        `
+        <div class="stackMarker">
+          ${stackHTML}
+          ${badge}
+        </div>
+        `,
 
-        html:
-          `
-          <div
-            class="
-              unitMarker
-              ${
-                SIDE_CLASSES[
-                  unit.owner
-                ]
-              }
-              ${
-                mine
-                  ? "mine"
-                  : ""
-              }
-              ${
-                selected
-                  ? "selected"
-                  : ""
-              }
-              ${
-                used
-                  ? "used"
-                  : ""
-              }
-            "
-          >
+      iconSize:
+        [60, 60],
 
-            <div class="counterDesignation">
-              ${
-                counterDesignation(
-                  unit
-                )
-              }
-            </div>
-
-            <div
-              class="
-                counterSymbol
-                ${unitClass}
-              "
-            ></div>
-
-            <div class="counterFactors">
-
-              <span>
-                ${unit.attack}
-              </span>
-
-              <span>
-                ${unit.defense}
-              </span>
-
-              <span>
-                ${unit.move}
-              </span>
-
-            </div>
-
-            <span class="counterSteps">
-              ${unit.steps}
-            </span>
-
-          </div>
-          `,
-
-        iconSize:
-          [
-            45,
-            45
-          ],
-
-        iconAnchor:
-          [
-            22,
-            22
-          ]
-
-      });
+      iconAnchor:
+        [27, 27]
+    });
 
 
-    const marker =
-      L.marker(
+  const marker =
+    L.marker(
+      [
+        hex.lat,
+        hex.lng
+      ],
 
-        [
-          hex.lat,
-          hex.lng
-        ],
+      {
+        icon,
 
-        {
-          icon,
-
-          zIndexOffset:
-            selected
-              ? 1000
-              : 500
-        }
-      );
-
-
-    marker.on(
-      "click",
-
-      event => {
-
-        L.DomEvent
-          .stopPropagation(
-            event
-          );
-
-
-        clickUnit(
-          unit
-        );
-
+        zIndexOffset:
+          700
       }
     );
 
 
-    marker.addTo(
-      map
-    );
+  marker.on(
+    "click",
+    event => {
+      L.DomEvent
+        .stopPropagation(
+          event
+        );
+
+      if (
+        units.length > 1
+      ) {
+        openStack(
+          hex.q,
+          hex.r
+        );
+
+        return;
+      }
+
+      clickUnit(
+        units[0]
+      );
+    }
+  );
 
 
-    unitLayers.push(
-      marker
-    );
-
-  }
-
+  return marker;
 }
 
 
-/*
-  Gives the counter a military symbol.
-
-  These are generic wargame/NATO-style
-  visual conventions rather than replicas
-  of any individual published counter.
-*/
-
-function counterUnitClass(
-  unit
-) {
-
-  if (
-    unit.domain ===
-    "naval"
-  ) {
-
-    return "naval";
-
-  }
-
-
-  const name =
-    unit.label
-      .toLowerCase();
-
-
-  if (
-    name.includes(
-      "carrier"
-    )
-  ) {
-
-    return "naval";
-
-  }
-
-
-  if (
-    name.includes(
-      "irregular"
-    )
-  ) {
-
-    return "irregular";
-
-  }
-
-
-  if (
-    name.includes(
-      "expeditionary"
-    )
-  ) {
-
-    return "armor";
-
-  }
-
-
-  return "infantry";
-
-}
-
-
-/*
-  Tiny top-line unit designation.
-*/
-
-function counterDesignation(
-  unit
-) {
-
-  const label =
-    unit.label;
-
-
-  if (
-    label.includes(
-      "I Corps"
-    )
-  ) {
-
-    return "I CORPS";
-
-  }
-
-
-  if (
-    label.includes(
-      "Expeditionary"
-    )
-  ) {
-
-    return "EXP FORCE";
-
-  }
-
-
-  if (
-    label.includes(
-      "Carrier"
-    )
-  ) {
-
-    return "CVBG";
-
-  }
-
-
-  if (
-    label.includes(
-      "Western"
-    )
-  ) {
-
-    return "WEST ARMY";
-
-  }
-
-
-  if (
-    label.includes(
-      "Central"
-    )
-  ) {
-
-    return "CENT ARMY";
-
-  }
-
-
-  if (
-    label.includes(
-      "Gulf Fleet"
-    )
-  ) {
-
-    return "GULF FLT";
-
-  }
-
-
-  if (
-    label.includes(
-      "Regional"
-    )
-  ) {
-
-    return "REGIONAL";
-
-  }
-
-
-  if (
-    label.includes(
-      "Irregular"
-    )
-  ) {
-
-    return "IRREG";
-
-  }
-
-
-  return "UNIT";
-
-}
-
-
-/*
-  UNIT SELECTION
-*/
-
-function clickUnit(
-  unit
-) {
-
+/* =========================================================
+   COUNTER ART
+   ========================================================= */
+
+function counterHTML(unit) {
   const me =
     getMe();
 
+  const mine =
+    me &&
+    unit.owner === me.seat;
+
+  const selected =
+    unit.id ===
+    selectedUnitId;
+
+  const used =
+    unit.attackedTurn ===
+    state.turn;
+
+
+  return `
+    <div
+      class="
+        unitMarker
+        ${SIDE_CLASSES[unit.owner]}
+        ${mine ? "mine" : ""}
+        ${selected ? "selected" : ""}
+        ${used ? "used" : ""}
+      "
+    >
+
+      <div class="counterDesignation">
+        ${
+          escapeHtml(
+            unit.designation ||
+            unit.label
+          )
+        }
+      </div>
+
+      <div class="counterSymbol">
+        ${unitSymbolSVG(unit)}
+      </div>
+
+      <div class="counterFactors">
+
+        <span>
+          ${unit.attack}
+        </span>
+
+        <span>
+          ${unit.defense}
+        </span>
+
+        <span>
+          ${unit.move}
+        </span>
+
+      </div>
+
+      <div class="counterSteps">
+        ${unit.steps}
+      </div>
+
+    </div>
+  `;
+}
+
+
+function unitSymbolSVG(unit) {
+  const type =
+    unit.type ||
+    inferUnitType(unit);
+
+
+  /*
+    All symbols share the exact
+    same SVG viewBox, so they stay
+    centered and aligned.
+  */
+
+  if (type === "armor") {
+    return `
+      <svg viewBox="0 0 40 24">
+        <rect
+          x="1"
+          y="1"
+          width="38"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+
+        <ellipse
+          cx="20"
+          cy="12"
+          rx="10"
+          ry="5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+      </svg>
+    `;
+  }
+
+
+  if (type === "naval") {
+    return `
+      <svg viewBox="0 0 40 24">
+
+        <rect
+          x="1"
+          y="1"
+          width="38"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+
+        <path
+          d="
+            M7 10
+            Q12 6 17 10
+            T27 10
+            T35 10
+          "
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+
+        <path
+          d="
+            M7 15
+            Q12 11 17 15
+            T27 15
+            T35 15
+          "
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+
+      </svg>
+    `;
+  }
+
+
+  if (type === "irregular") {
+    return `
+      <svg viewBox="0 0 40 24">
+
+        <rect
+          x="1"
+          y="1"
+          width="38"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+
+        <path
+          d="
+            M20 6
+            L27 12
+            L20 18
+            L13 12
+            Z
+          "
+          fill="currentColor"
+        />
+
+      </svg>
+    `;
+  }
+
+
+  /*
+    Infantry.
+  */
+
+  return `
+    <svg viewBox="0 0 40 24">
+
+      <rect
+        x="1"
+        y="1"
+        width="38"
+        height="22"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      />
+
+      <line
+        x1="3"
+        y1="3"
+        x2="37"
+        y2="21"
+        stroke="currentColor"
+        stroke-width="1.5"
+      />
+
+      <line
+        x1="37"
+        y1="3"
+        x2="3"
+        y2="21"
+        stroke="currentColor"
+        stroke-width="1.5"
+      />
+
+    </svg>
+  `;
+}
+
+
+function inferUnitType(unit) {
+  if (
+    unit.domain === "naval"
+  ) {
+    return "naval";
+  }
+
+  const label =
+    unit.label.toLowerCase();
+
+  if (
+    label.includes("expeditionary")
+  ) {
+    return "armor";
+  }
+
+  if (
+    label.includes("irregular")
+  ) {
+    return "irregular";
+  }
+
+  return "infantry";
+}
+
+
+/* =========================================================
+   STACK INSPECTOR
+   ========================================================= */
+
+function openStack(q, r) {
+  stackQ = q;
+  stackR = r;
+
+  renderStackPanel(
+    q,
+    r
+  );
+}
+
+
+function renderStackPanel(q, r) {
+  const units =
+    state.units.filter(
+      unit =>
+        unit.q === q &&
+        unit.r === r
+    );
+
+  if (!units.length) {
+    $("#stackPanel")
+      .classList
+      .add("hidden");
+
+    stackQ = null;
+    stackR = null;
+
+    return;
+  }
+
+  $("#stackPanel")
+    .classList
+    .remove("hidden");
+
+  $("#stackHex")
+    .textContent =
+      `HEX ${q}-${r}`;
+
+
+  $("#stackContents")
+    .innerHTML =
+      units.map(
+        unit => `
+          <div class="stackUnit">
+
+            <div class="stackMiniCounter">
+              ${counterHTML(unit)}
+            </div>
+
+            <div>
+
+              <div class="stackUnitName">
+                ${escapeHtml(unit.label)}
+              </div>
+
+              <div class="stackUnitStats">
+                A${unit.attack}
+                ·
+                D${unit.defense}
+                ·
+                M${unit.move}
+                ·
+                ${unit.steps} steps
+
+                <br>
+
+                ${SIDES[unit.owner]}
+              </div>
+
+            </div>
+
+            <button
+              data-stack-unit="${escapeHtml(unit.id)}"
+            >
+              Select
+            </button>
+
+          </div>
+        `
+      ).join("");
+
+
+  $("#stackContents")
+    .querySelectorAll(
+      "[data-stack-unit]"
+    )
+    .forEach(
+      button => {
+        button.onclick =
+          () => {
+            const unit =
+              state.units.find(
+                unit =>
+                  unit.id ===
+                  button.dataset
+                    .stackUnit
+              );
+
+            if (!unit) return;
+
+            $("#stackPanel")
+              .classList
+              .add("hidden");
+
+            stackQ = null;
+            stackR = null;
+
+            clickUnit(unit);
+          };
+      }
+    );
+}
+
+
+/* =========================================================
+   UNIT INTERACTION
+   ========================================================= */
+
+function clickUnit(unit) {
+  const me =
+    getMe();
 
   if (
     !me ||
@@ -2023,46 +2007,28 @@ function clickUnit(
     return;
   }
 
-
-  if (
-    !selectedUnitId
-  ) {
-
+  if (!selectedUnitId) {
     if (
-      unit.owner ===
-      me.seat
+      unit.owner === me.seat
     ) {
-
       selectedUnitId =
         unit.id;
-
     }
-
   } else {
-
     const selected =
       getSelectedUnit();
 
-
     if (!selected) {
-
       selectedUnitId =
         null;
-
     } else if (
-      unit.owner ===
-      me.seat
+      unit.owner === me.seat
     ) {
-
       selectedUnitId =
         unit.id;
-
     } else {
-
       send({
-
-        type:
-          "attack",
+        type: "attack",
 
         playerId,
 
@@ -2071,44 +2037,28 @@ function clickUnit(
 
         defenderId:
           unit.id
-
       });
-
 
       selectedUnitId =
         null;
-
 
       setTimeout(
         fetchCurrentState,
         150
       );
-
     }
-
   }
 
-
   render();
-
 }
 
 
-/*
-  MOVE
-*/
-
-function clickHex(
-  hex
-) {
-
+function clickHex(hex) {
   const me =
     getMe();
 
-
   const selected =
     getSelectedUnit();
-
 
   if (
     !me ||
@@ -2118,82 +2068,78 @@ function clickHex(
     selected.owner !==
       me.seat
   ) {
+    /*
+      No selected counter:
+      tapping an occupied hex
+      should still inspect its stack.
+    */
+
+    const stack =
+      state.units.filter(
+        unit =>
+          unit.q === hex.q &&
+          unit.r === hex.r
+      );
+
+    if (
+      stack.length > 1
+    ) {
+      openStack(
+        hex.q,
+        hex.r
+      );
+    }
 
     return;
-
   }
 
-
   send({
-
-    type:
-      "move",
+    type: "move",
 
     playerId,
 
     unitId:
       selected.id,
 
-    q:
-      hex.q,
-
-    r:
-      hex.r
-
+    q: hex.q,
+    r: hex.r
   });
-
 
   selectedUnitId =
     null;
-
 
   setTimeout(
     fetchCurrentState,
     150
   );
-
 }
 
 
-/*
-  UNIT INFO
-*/
+/* =========================================================
+   SELECTED UNIT
+   ========================================================= */
 
 function renderSelected() {
-
   const unit =
     getSelectedUnit();
 
-
   if (!unit) {
-
     $("#unitPanel")
       .classList
-      .add(
-        "hidden"
-      );
+      .add("hidden");
 
     return;
-
   }
-
 
   $("#unitPanel")
     .classList
-    .remove(
-      "hidden"
-    );
-
+    .remove("hidden");
 
   $("#selectedUnit")
     .innerHTML =
       `
       <div class="unitTitle">
-        ${
-          escapeHtml(
-            unit.label
-          )
-        }
+        ${escapeHtml(unit.label)}
       </div>
 
       Attack ${unit.attack}
@@ -2209,9 +2155,7 @@ function renderSelected() {
       ${
         unit.movedTurn ===
         state.turn
-
           ? "Movement expended"
-
           : "Movement available"
       }
 
@@ -2220,69 +2164,49 @@ function renderSelected() {
       ${
         unit.attackedTurn ===
         state.turn
-
           ? "Combat expended"
-
           : "Combat available"
       }
       `;
-
 }
 
 
-/*
-  LOG
-*/
+/* =========================================================
+   LOG
+   ========================================================= */
 
 function renderLog() {
-
-  $("#log")
-    .innerHTML =
-      state.log
-        .slice(
-          0,
-          25
-        )
-        .map(
-          line =>
-            `
-            <div class="logLine">
-              ${
-                escapeHtml(
-                  line
-                )
-              }
-            </div>
-            `
-        )
-        .join("");
-
+  $("#log").innerHTML =
+    state.log
+      .slice(0, 25)
+      .map(
+        line => `
+          <div class="logLine">
+            ${escapeHtml(line)}
+          </div>
+        `
+      )
+      .join("");
 }
 
 
-/*
-  GAME DIRECTORY
-*/
+/* =========================================================
+   DIRECTORY
+   ========================================================= */
 
 async function loadDirectory() {
-
   try {
-
     const response =
       await fetch(
-
         `/api/directory?playerId=${encodeURIComponent(playerId)}&t=${Date.now()}`,
-
         {
           cache:
             "no-store"
         }
       );
 
-
     const data =
       await response.json();
-
 
     renderGameList(
       "#joinableGames",
@@ -2290,32 +2214,22 @@ async function loadDirectory() {
       "Join"
     );
 
-
     renderGameList(
       "#currentGames",
       data.mine,
       "Resume"
     );
 
-
     renderGameList(
       "#finishedGames",
       data.finished,
       null
     );
-
   } catch {
-
     $("#joinableGames")
       .innerHTML =
-        `
-        <div class="muted">
-          Could not load lobbies.
-        </div>
-        `;
-
+        `<div class="smallText">Unable to load.</div>`;
   }
-
 }
 
 
@@ -2324,303 +2238,163 @@ function renderGameList(
   games,
   buttonLabel
 ) {
-
   const root =
     $(selector);
 
-
-  if (
-    !games ||
-    !games.length
-  ) {
-
+  if (!games?.length) {
     root.innerHTML =
-      `
-      <div class="muted">
-        None.
-      </div>
-      `;
+      `<div class="smallText">None.</div>`;
 
     return;
-
   }
-
 
   root.innerHTML =
-    games
-      .map(
-        game => {
-
-          const names =
-            (
-              game.players ||
-              []
+    games.map(
+      game => {
+        const names =
+          (game.players || [])
+            .map(
+              player =>
+                player.name
             )
-              .map(
-                player =>
-                  player.name
-              )
-              .join(
-                ", "
-              ) ||
-            "Empty";
+            .join(", ") ||
+          "Empty";
 
+        return `
+          <div class="gameRow">
 
-          return `
-            <div class="gameRow">
+            <div>
 
-              <div class="gameRowMeta">
-
-                <div class="gameCode">
-                  ${
-                    escapeHtml(
-                      game.code
-                    )
-                  }
-                </div>
-
-                <div class="gameDesc">
-
-                  ${
-                    escapeHtml(
-                      game.phase
-                    )
-                  }
-
-                  ·
-
-                  ${
-                    game.players
-                      ?.length ||
-                    0
-                  }/4
-
-                  ·
-
-                  ${
-                    escapeHtml(
-                      names
-                    )
-                  }
-
-                  ${
-                    game.turn
-                      ? ` · Turn ${game.turn}`
-                      : ""
-                  }
-
-                </div>
-
+              <div class="gameCode">
+                ${escapeHtml(game.code)}
               </div>
 
-              ${
-                buttonLabel
-                  ? `
-                    <button
-                      data-open-room="${
-                        escapeHtml(
-                          game.code
-                        )
-                      }"
-                    >
-                      ${buttonLabel}
-                    </button>
-                    `
-                  : `
-                    <span class="muted">
-                      Finished
-                    </span>
-                    `
-              }
+              <div class="gameDesc">
+                ${escapeHtml(game.phase)}
+                ·
+                ${game.players?.length || 0}/4
+                ·
+                ${escapeHtml(names)}
+                ${
+                  game.turn
+                    ? ` · Turn ${game.turn}`
+                    : ""
+                }
+              </div>
 
             </div>
-          `;
 
-        }
-      )
-      .join("");
+            ${
+              buttonLabel
+                ? `
+                  <button
+                    data-open-room="${escapeHtml(game.code)}"
+                  >
+                    ${buttonLabel}
+                  </button>
+                `
+                : `
+                  <span class="smallText">
+                    Finished
+                  </span>
+                `
+            }
 
-
-  root
-    .querySelectorAll(
-      "[data-open-room]"
-    )
-    .forEach(
-      button => {
-
-        button.onclick =
-          () =>
-            openRoom(
-              button.dataset
-                .openRoom
-            );
-
+          </div>
+        `;
       }
-    );
+    ).join("");
 
+  root.querySelectorAll(
+    "[data-open-room]"
+  ).forEach(
+    button => {
+      button.onclick =
+        () =>
+          openRoom(
+            button.dataset.openRoom
+          );
+    }
+  );
 }
 
 
-/*
-  CLEAR MAP
-*/
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
-function clearMapLayers() {
-
-  const allLayers = [
-
-    ...hexLayers,
-
-    ...unitLayers,
-
-    ...placeLayers
-
-  ];
-
-
+function clearUnitLayers() {
   for (
     const layer of
-    allLayers
+    unitLayers
   ) {
-
     try {
-
-      map.removeLayer(
-        layer
-      );
-
+      map.removeLayer(layer);
     } catch {}
-
   }
 
-
-  hexLayers =
-    [];
-
-
-  unitLayers =
-    [];
-
-
-  placeLayers =
-    [];
-
+  unitLayers = [];
 }
 
 
-/*
-  HELPERS
-*/
-
 function getMe() {
-
-  if (!state) {
-    return null;
-  }
-
-
   return (
-    state.players.find(
+    state?.players?.find(
       player =>
-        player.id ===
-        playerId
+        player.id === playerId
     ) ||
     null
   );
-
 }
 
 
 function getSelectedUnit() {
-
-  if (
-    !state ||
-    !selectedUnitId
-  ) {
-
-    return null;
-
-  }
-
-
   return (
-    state.units.find(
+    state?.units?.find(
       unit =>
         unit.id ===
         selectedUnitId
     ) ||
     null
   );
-
 }
 
 
-function showLoading(
-  text
-) {
-
-  $("#loadingText")
-    .textContent =
-      text;
-
+function showLoading(text) {
+  $("#loadingText").textContent =
+    text;
 
   $("#loading")
     .classList
-    .remove(
-      "hidden"
-    );
-
+    .remove("hidden");
 }
 
 
 function hideLoading() {
-
   $("#loading")
     .classList
-    .add(
-      "hidden"
-    );
-
+    .add("hidden");
 }
 
 
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value
-  )
-  .replace(
-    /[&<>"']/g,
-
-    char =>
-      ({
-
-        "&":
-          "&amp;",
-
-        "<":
-          "&lt;",
-
-        ">":
-          "&gt;",
-
-        '"':
-          "&quot;",
-
-        "'":
-          "&#039;"
-
+function escapeHtml(value) {
+  return String(value)
+    .replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
       })[char]
-  );
-
+    );
 }
 
 
-/*
-  INITIAL MENU LOAD
-*/
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
 
 loadDirectory();
 
@@ -2628,41 +2402,24 @@ loadDirectory();
 directoryTimer =
   setInterval(
     () => {
-
       if (!code) {
-
         loadDirectory();
-
       }
-
     },
-
     3000
   );
 
 
-/*
-  DIRECT ROOM LINKS
-*/
-
 if (
-  location.hash.length >
-  1
+  location.hash.length > 1
 ) {
-
   const hashCode =
     location.hash
       .slice(1)
       .toUpperCase();
 
+  $("#joinCode").value =
+    hashCode;
 
-  $("#joinCode")
-    .value =
-      hashCode;
-
-
-  openRoom(
-    hashCode
-  );
-
+  openRoom(hashCode);
 }
