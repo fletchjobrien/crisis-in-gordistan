@@ -8,16 +8,12 @@
 
   <meta
     name="viewport"
-    content="
-      width=device-width,
-      initial-scale=1,
-      viewport-fit=cover
-    "
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
   >
 
   <meta
     name="theme-color"
-    content="#ece9df"
+    content="#c9c3af"
   >
 
   <title>
@@ -36,11 +32,13 @@
 
 </head>
 
+
 <body>
 
   <div id="map"></div>
 
-  <!-- GAME TOP BAR -->
+
+  <!-- GAME BAR -->
 
   <header
     id="topbar"
@@ -49,7 +47,7 @@
 
     <button
       id="gameMenuBtn"
-      class="glassButton"
+      class="boardButton"
     >
       ☰
     </button>
@@ -66,7 +64,7 @@
 
     <button
       id="playersButton"
-      class="glassButton"
+      class="boardButton"
     >
       Players
     </button>
@@ -80,40 +78,31 @@
 
     <section class="menuCard">
 
-      <div class="titleBlock">
+      <h1>
+        CRISIS
+        <span>IN GORDISTAN</span>
+      </h1>
 
-        <h1>
-          Crisis in Gordistan
-        </h1>
+      <p class="subtitle">
+        A political-military hex game
+      </p>
 
-        <p>
-          Online hex-and-counter strategy game
-        </p>
-
-      </div>
-
-
-      <label
-        class="fieldLabel"
-        for="menuName"
-      >
-        Your name
+      <label>
+        Commander
       </label>
 
       <input
         id="menuName"
         maxlength="24"
-        placeholder="Name"
+        placeholder="Your name"
       >
-
 
       <button
         id="createBtn"
         class="primary full"
       >
-        Create Lobby
+        Create Game
       </button>
-
 
       <div class="joinRow">
 
@@ -130,12 +119,12 @@
       </div>
 
 
-      <div class="menuSection">
+      <section class="menuSection">
 
         <div class="sectionHeader">
 
           <strong>
-            Joinable Lobbies
+            Available Games
           </strong>
 
           <button
@@ -147,26 +136,20 @@
 
         </div>
 
-        <div
-          id="joinableGames"
-          class="gameList"
-        ></div>
+        <div id="joinableGames"></div>
 
-      </div>
+      </section>
 
 
-      <div class="menuSection">
+      <section class="menuSection">
 
         <strong>
-          My Current Games
+          Games in Progress
         </strong>
 
-        <div
-          id="currentGames"
-          class="gameList"
-        ></div>
+        <div id="currentGames"></div>
 
-      </div>
+      </section>
 
 
       <details class="menuSection">
@@ -175,10 +158,7 @@
           Finished Games
         </summary>
 
-        <div
-          id="finishedGames"
-          class="gameList"
-        ></div>
+        <div id="finishedGames"></div>
 
       </details>
 
@@ -191,21 +171,18 @@
 
   <section
     id="lobby"
-    class="sheet hidden"
+    class="paperPanel hidden"
   >
 
-    <div class="sheetHeader">
+    <div class="panelHeader">
 
       <div>
 
-        <strong id="lobbyTitle">
-          Game Lobby
+        <strong>
+          COMMAND ASSIGNMENT
         </strong>
 
-        <div
-          id="roomTag"
-          class="muted"
-        ></div>
+        <small id="roomTag"></small>
 
       </div>
 
@@ -216,24 +193,17 @@
     </div>
 
 
-    <label
-      class="fieldLabel"
-      for="playerName"
-    >
-      Your Name
+    <label>
+      Commander
     </label>
 
     <input
       id="playerName"
       maxlength="24"
-      placeholder="Your name"
     >
 
 
-    <label
-      class="fieldLabel"
-      for="seat"
-    >
+    <label>
       Side
     </label>
 
@@ -262,34 +232,21 @@
       id="takeSeatBtn"
       class="primary full"
     >
-      Take Side
+      Take Command
     </button>
 
 
-    <div
-      id="lobbyStatus"
-      class="statusLine"
-    ></div>
+    <div id="lobbyStatus"></div>
 
-
-    <div
-      id="lobbyPlayers"
-      class="playerList"
-    ></div>
+    <div id="lobbyPlayers"></div>
 
 
     <button
       id="startBtn"
       class="primary full"
     >
-      Start / Test Game
+      Begin Game
     </button>
-
-
-    <p class="tiny">
-      One player is enough for testing.
-      Multiplayer works normally with more.
-    </p>
 
   </section>
 
@@ -298,13 +255,13 @@
 
   <section
     id="gameMenu"
-    class="drawer hidden"
+    class="sidePanel hidden"
   >
 
-    <div class="drawerHeader">
+    <div class="panelHeader">
 
       <strong>
-        Game Menu
+        GAME MENU
       </strong>
 
       <button id="closeGameMenu">
@@ -313,6 +270,10 @@
 
     </div>
 
+    <div
+      id="roomCodeInMenu"
+      class="smallText"
+    ></div>
 
     <button
       id="exitGameBtn"
@@ -321,19 +282,12 @@
       Exit to Main Menu
     </button>
 
-
     <button
       id="finishGameBtn"
       class="full danger"
     >
-      Mark Game Finished
+      End Game
     </button>
-
-
-    <div
-      id="roomCodeInMenu"
-      class="muted"
-    ></div>
 
   </section>
 
@@ -342,13 +296,13 @@
 
   <section
     id="playersDrawer"
-    class="drawer hidden"
+    class="sidePanel hidden"
   >
 
-    <div class="drawerHeader">
+    <div class="panelHeader">
 
       <strong>
-        Players / Turn Order
+        TURN ORDER
       </strong>
 
       <button id="closePlayers">
@@ -364,7 +318,37 @@
   </section>
 
 
-  <!-- UNIT PANEL -->
+  <!-- STACK INSPECTOR -->
+
+  <section
+    id="stackPanel"
+    class="stackPanel hidden"
+  >
+
+    <div class="panelHeader">
+
+      <div>
+
+        <strong>
+          HEX STACK
+        </strong>
+
+        <small id="stackHex"></small>
+
+      </div>
+
+      <button id="closeStack">
+        ×
+      </button>
+
+    </div>
+
+    <div id="stackContents"></div>
+
+  </section>
+
+
+  <!-- SELECTED UNIT -->
 
   <section
     id="unitPanel"
@@ -380,8 +364,6 @@
   </section>
 
 
-  <!-- LOG -->
-
   <button
     id="logButton"
     class="floatingLog hidden"
@@ -390,15 +372,23 @@
   </button>
 
 
+  <button
+    id="endTurnBtn"
+    class="endTurn hidden"
+  >
+    End Turn
+  </button>
+
+
   <section
     id="logDrawer"
-    class="logDrawer hidden"
+    class="logPanel hidden"
   >
 
-    <div class="drawerHeader">
+    <div class="panelHeader">
 
       <strong>
-        Game Log
+        GAME RECORD
       </strong>
 
       <button id="closeLog">
@@ -412,18 +402,6 @@
   </section>
 
 
-  <!-- TURN -->
-
-  <button
-    id="endTurnBtn"
-    class="endTurn hidden"
-  >
-    End Turn
-  </button>
-
-
-  <!-- LOADING -->
-
   <div
     id="loading"
     class="loading hidden"
@@ -432,7 +410,7 @@
     <div class="spinner"></div>
 
     <div id="loadingText">
-      Connecting…
+      Loading…
     </div>
 
   </div>
